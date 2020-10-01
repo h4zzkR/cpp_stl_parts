@@ -1,64 +1,56 @@
 #include <iostream>
-#include <vector>
-#include <fstream>
-// Count inverses in array with merge split for O(nlogn)
+#include <deque>
+/*
+ * Есть два дека. Мы следим за тем,
+ * чтобы в первом количество было всегда либо
+ * равное количеству эжлементов второго, либо
+ * они отличаются по количеству не более чем на единицу.
+ * Это гарантирует, что в первом у нас первая половина
+ * (или n/2 + 1 в случае нечетного количества элементов),
+ * в которую мы всегда можем пихнуть гоблина с привилегиями,
+ * а простую челядь отправить в конец второго дека (второй
+ * половины).
+ */
 
-void merge(std::vector <int> &A, std::vector <int> &memory, int left, int middle_idx, int right, long &inv_cnt){
-    for (int i = left; i <= right; ++i) // update helper array from the last recursion step
-        memory[i] = A[i];
-    int i = left; // iterator, starts from first element of left side | [left; middle]
-    int j = middle_idx + 1; // iterator, starts from the first element of right side | [middle+1; right]
-    int k = left; // iterator through the helper memory array
-
-    while (i <= middle_idx && j <= right){ // until at least one half is over
-        if (memory[i] <= memory[j]) {
-            A[k] = memory[i++]; // ok, it isn't inverse
+int main() {
+    std::deque <int> goblins1, goblins2;
+    char command;
+    int num_of_req, goblin, old_goblin;
+    int len1 = 0, len2 = 0;
+    std::cin >> num_of_req;
+    for (int i=0; i<num_of_req; i++){
+        std::cin >> command;
+        if (command == '+'){
+            std::cin >> goblin;
+            if (len1 == 0){
+                goblins1.push_back(goblin); len1++;
+            }
+            else {
+                goblins2.push_back(goblin); len2++;
+            }
+        } else if (command == '-') {
+            old_goblin = goblins1.front();
+            goblins1.pop_front();
+            std::cout << old_goblin << std::endl;
+            len1--;
+        } else if (command == '*') {
+            std::cin >> goblin;
+            /* Costil detected
+             * Гоблины особые = особый подход
+             * Следим за тем, чтобы в первом была половина!
+             */
+            if (len1 - len2 == 1){
+                goblins2.push_front(goblin); len2++;
+            }
+            else { goblins1.push_back(goblin); len1++; }
         }
-        else { // it is inverse: we have already sorted left part in
-            // which we push element from the right, so for inverse counting
-            // we need to add middle_index - i + 1. For ex, right=4[3], left=0[1], middle_idx=2[5], i=2[5], j=3[3]:
-            // [1,2,#,5] [3,4] here we need to place '3' before '5' and after '2', to the i position.
-            // Our left part have been sorted already, so there are inverses of j element with all >=i elements.
-            // Because of recursion, we will count inverses for all parts -> elements.
-            A[k] = memory[j++];
-            inv_cnt += (middle_idx - i + 1);
+        // следим за количествами элементов в деках
+        if (len1 < len2){
+            old_goblin = goblins2.front(); goblins2.pop_front();
+            goblins1.push_back(old_goblin);
+            len2--; len1++;
         }
-        k++; // iterates from left to right in original array
+//        std::cout << len1 << ' ' << len2 << std::endl;
     }
-    // The way we choosing indexes (right-(middle+1) > (middle-left) allow us to think that
-    // j value will be more than i value or equals it when while ends, so we just need to
-    // change our array with remaining left part' values (we have already pushed to left all elements from right
-    // that lower than some elements from left, at this point we have elements from right
-    // that more than all elements from left (and pushed elements from right),
-    // but they are already in A (we didn't change their positions).
-    while (i <= middle_idx)
-        A[k++] = memory[i++];
-}
 
-void mergesort(std::vector <int> &A, std::vector <int> &memory, int left, int right, long &inv_cnt){
-    // Merge sort main recursive function
-    // [left; middle] - left part, [middle+1; right] - right part
-    if (left < right) {
-        int middle_idx = left + (right - left) / 2; // index of middle element
-        mergesort(A, memory, left, middle_idx, inv_cnt); // sort the first part [left, middle_idx]
-        mergesort(A, memory, middle_idx + 1, right, inv_cnt); // sort the second part (middle_idx, right]
-        merge(A, memory, left, middle_idx, right, inv_cnt); // merge this parts into one
-    }
-}
-
-int main()
-{
-    std::ifstream fin("inverse.in");
-    std::ofstream fout("inverse.out");
-    int n; fin >> n;
-//    int n = 5;
-    long inv_cnt = 0;
-    std::vector <int> arr(n);
-//    std::vector <int> arr = {3, 4, 5, 6, 7, 8};
-    std::vector <int> memory = arr; // helper array: copy of an original array on the each recursion step
-    for (int i = 0; i < n; ++i) fin >> arr[i];
-    mergesort(arr, memory, 0, n-1, inv_cnt);
-//    std::cout << inv_cnt;
-    fout << inv_cnt; fin.close(); fout.close();
-    return 0;
 }
