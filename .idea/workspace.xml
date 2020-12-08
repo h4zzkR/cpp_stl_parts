@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="BigInt" targetName="BigInt" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="34763335-1a6f-4d35-ab0f-3b68e5579afc" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="clangTidyViaClangd" value="false" />
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="ProjectId" id="1kN6Amb1FTHohoyCUHzf35G4V1K" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="restartRequiresConfirmation" value="false" />
+  </component>
+  <component name="RunManager">
+    <configuration name="BigInt" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="BigInt" TARGET_NAME="BigInt" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="BigInt" RUN_TARGET_NAME="BigInt">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="34763335-1a6f-4d35-ab0f-3b68e5579afc" name="Default Changelist" comment="" />
+      <created>1605528560399</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1605528560399</updated>
+      <workItem from="1605528561991" duration="4702000" />
+      <workItem from="1605539066963" duration="11119000" />
+      <workItem from="1605650641799" duration="33000" />
+      <workItem from="1605907316414" duration="6897000" />
+      <workItem from="1605915492509" duration="1560000" />
+      <workItem from="1605917107663" duration="4008000" />
+      <workItem from="1605945209967" duration="131000" />
+      <workItem from="1606007954364" duration="1937000" />
+      <workItem from="1606050961097" duration="30000" />
+      <workItem from="1606129089514" duration="28688000" />
+      <workItem from="1606158216744" duration="22920000" />
+      <workItem from="1606205916333" duration="23345000" />
+      <workItem from="1606232727671" duration="41498000" />
+      <workItem from="1606320628008" duration="9353000" />
+      <workItem from="1606415553803" duration="22000" />
+      <workItem from="1606660305403" duration="13742000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="835" y="278" key="#xdebugger.XInspectDialog" timestamp="1605917658628">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="835" y="278" key="#xdebugger.XInspectDialog/0.0.1920.1050@0.0.1920.1050" timestamp="1605917658628" />
+    <state x="715" y="228" key="#xdebugger.evaluate" timestamp="1605917741729">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="715" y="228" key="#xdebugger.evaluate/0.0.1920.1050@0.0.1920.1050" timestamp="1605917741729" />
+    <state x="740" y="280" key="FileChooserDialogImpl" timestamp="1606672888275">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="740" y="280" key="FileChooserDialogImpl/0.0.1920.1050@0.0.1920.1050" timestamp="1606672888275" />
+    <state width="1877" height="203" key="GridCell.Tab.0.bottom" timestamp="1606674309772">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state width="1877" height="203" key="GridCell.Tab.0.bottom/0.0.1920.1050@0.0.1920.1050" timestamp="1606674309772" />
+    <state width="1877" height="203" key="GridCell.Tab.0.center" timestamp="1606674309772">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state width="1877" height="203" key="GridCell.Tab.0.center/0.0.1920.1050@0.0.1920.1050" timestamp="1606674309772" />
+    <state width="1877" height="203" key="GridCell.Tab.0.left" timestamp="1606674309772">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state width="1877" height="203" key="GridCell.Tab.0.left/0.0.1920.1050@0.0.1920.1050" timestamp="1606674309772" />
+    <state width="1877" height="203" key="GridCell.Tab.0.right" timestamp="1606674309772">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state width="1877" height="203" key="GridCell.Tab.0.right/0.0.1920.1050@0.0.1920.1050" timestamp="1606674309772" />
+    <state x="512" y="254" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1606258898281">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="512" y="254" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.0.1920.1050@0.0.1920.1050" timestamp="1606258898281" />
+    <state x="736" y="310" key="refactoring.ChangeSignatureDialog" timestamp="1606180998846">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="736" y="310" key="refactoring.ChangeSignatureDialog/0.0.1920.1050@0.0.1920.1050" timestamp="1606180998846" />
+    <state x="616" y="243" key="run.anything.popup" timestamp="1606171180195">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="616" y="243" key="run.anything.popup/0.0.1920.1050@0.0.1920.1050" timestamp="1606171180195" />
+    <state x="623" y="227" key="search.everywhere.popup" timestamp="1606233348339">
+      <screen x="0" y="0" width="1920" height="1050" />
+    </state>
+    <state x="623" y="227" key="search.everywhere.popup/0.0.1920.1050@0.0.1920.1050" timestamp="1606233348339" />
+  </component>
+  <component name="XDebuggerManager">
+    <watches-manager>
+      <configuration name="CMakeRunConfiguration">
+        <watch expression="divd.bits" />
+        <watch expression="divr.bits" />
+      </configuration>
+    </watches-manager>
+  </component>
+</project>
