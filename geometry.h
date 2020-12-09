@@ -369,9 +369,9 @@ protected:
         /*
          * Расчет параметров эллипса
          * Фокусы могут находится не на оси абсцисс,
-         * поэтому каноническое уравнение эллипса не подходит
-         * Сначала я считаю угол поворота фокальной оси относительно начала координат,
-         * Потом поворочаиваю на этот угол директрисы
+         * поэтому каноническое уравнение эллипса не подходит.
+         * Здесь считаю угол поворота фокальной оси относительно начала координат,
+         * а также параметры эллипса
          */
         Vector axis(focus1, focus2);
         Vector base_vector(Point(0, 0), Point(1,0)); // угол считается относительно начала координат
@@ -409,7 +409,10 @@ public:
 
     std::pair<Line, Line> directrices() {
         /*
-         * поворот директрис
+         * поворот директрис выполняется так:
+         * определяем точки директрисы в каноническом виде
+         * поворачиваем эти точки угол наклона эллипса относительно начала координат
+         * проводим через ось фокусов и эту точку перпендикуляры
          */
         double dcts_x = majorAxis / eccentricity_;
         Line axis(focus1, focus2);
@@ -466,6 +469,9 @@ public:
     }
 
     void scale(Point center, double coefficient) {
+        /*
+        * Перемещаем фокусы и следом считаем всякие параметры
+        */
         Point point(focus1.x - center.x, focus1.y - center.y);
         majorAxis *= coefficient;
         if (focus1 != focus2) {
@@ -597,7 +603,7 @@ public:
         return points;
     }
 
-    virtual bool isConvex() { // not here
+    virtual bool isConvex() { 
         int size = verticesCount();
         if (verticesCount() > 3) {
             bool psign = false;
@@ -615,7 +621,7 @@ public:
         return true;
     }
 
-    bool containsPoint(Point point) const { // not here
+    bool containsPoint(Point point) const { 
         bool inside = false;
         int size = verticesCount();
         for (int i = 1; i < size + 1; ++i) {
@@ -634,7 +640,7 @@ public:
         return inside;
     }
 
-    void rotate(Point center, double angle) { // not here
+    void rotate(Point center, double angle) {
         angle *= M_PI / 180;
         for (int i = 0; i < verticesCount(); ++i)
             points[i].rotate(center, angle);
@@ -709,6 +715,11 @@ public:
     }
 
     bool isCongruentTo(const Shape& other) const override {
+        /*
+        * Методы конгруэнтности и подобия похожи не только в реализации, но и в том, что у меня на них валился тест с TL
+        * Поэтому ничего более умного, чем отсортировать точки, а потом пройтись по ним сравнениями, я не придумал
+        * Сортировка т.к. нужно учитывать циклические перестановки точек
+        */
         if (other.isCurve)
             return false;
         const Polygon other_ = dynamic_cast<const Polygon &>(other);
@@ -879,7 +890,7 @@ class Triangle : public Polygon {
 
     double a = NAN, b = NAN, c = NAN;
 
-    Line getMdts(Vector segment) {
+    Line getMdts(Vector segment) { // срединный перпендикуляр
         Point mid = segment.center();
         return Line::getOrth(Line(segment.start, segment.end), mid);
     }
