@@ -138,7 +138,9 @@ class SplayTree {
         std::pair<bool, Node*> outpair = find(nroot, key, insert);
         nroot = outpair.second;
         bool found = outpair.first;
+        
         if (found == 1 && insert != true || !found) {
+            
             if (nroot->key == key && root_in_left) {
                 Node *right_tree = nroot->right;
                 connect(right_tree, nullptr);
@@ -146,6 +148,7 @@ class SplayTree {
                 updateSum(nroot);
                 updateSum(right_tree);
                 return std::make_pair(nroot, right_tree);
+                
             } if (nroot->key >= key) {
                 Node *left_tree = nroot->left;
                 connect(left_tree, nullptr);
@@ -153,6 +156,7 @@ class SplayTree {
                 updateSum(nroot);
                 updateSum(left_tree);
                 return std::make_pair(left_tree, nroot);
+                
             } if (nroot->key < key) {
                 Node *right_tree = nroot->right;
                 connect(right_tree, nullptr);
