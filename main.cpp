@@ -18,7 +18,7 @@ class AVLTree {
         }
 
         ~Node() {
-            delete this;
+            delete this;//Навертел так же, как в Splay). Это рекурсивный вызов, он тут не нужен, так как у тебя всё равно внутри Node мало что происходит
         }
     };
 
@@ -197,7 +197,7 @@ public:
         std::cout << ((apex == 1000000001) ? "none" : std::to_string(apex)) << std::endl;
     }
 
-    ~AVLTree() {
+    ~AVLTree() {// И тут нужно сделать нормально
         delete root->right;
         delete root->left;
         delete root;
