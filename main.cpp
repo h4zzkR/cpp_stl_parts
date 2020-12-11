@@ -10,7 +10,7 @@ class AVLTree {
         int height = 1;
         long long key;
 
-        explicit Node(long long key) {
+        explicit Node(long long key) { // а зачем explicit?
             left = nullptr;
             right = nullptr;
             height = 1;
@@ -125,9 +125,9 @@ class AVLTree {
                 delete node;
                 node = nullptr;
             } else if (node->left == nullptr) {
-                *node = *node->right;
+                *node = *node->right;// А где удаление старой вершины, ссылка на которую пропадёт?
             } else if (node->right == nullptr) {
-                *node = *node->left;
+                *node = *node->left;// Аналогично
             } else { // есть оба поддерева
                 Node* apex = findSuccessor(node->right); // минимум множества элементов, больших node (правое поддерево)
                 node->key = apex->key;
