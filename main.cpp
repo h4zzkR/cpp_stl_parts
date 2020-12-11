@@ -25,8 +25,6 @@ class SplayTree {
         }
         
         ~Node() {
-            delete left;
-            delete right;
             delete this;
         }
     };
@@ -274,6 +272,8 @@ public:
     }
 
     ~SplayTree() {
+        delete root->left;
+        delete root->right;
         delete root;
     }
 };
