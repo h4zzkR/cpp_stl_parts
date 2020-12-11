@@ -316,5 +316,6 @@ int main() {
 //    tree.test();
     for (int i = 0; i < n; ++i)
         command_manager(tree, sum, prev_commmand);
+    
     return 0;
 }
