@@ -23,6 +23,12 @@ class SplayTree {
             sum = key;
             max = key;
         }
+        
+        ~Node() {
+            delete left;
+            delete right;
+            delete this;
+        }
     };
 
     Node *root = nullptr;
@@ -267,7 +273,9 @@ public:
         }
     }
 
-//    void sum(long long L, long long R);
+    ~SplayTree() {
+        delete root;
+    }
 };
 
 void command_manager(SplayTree &tree, long long& sum, char& prev_command) {
