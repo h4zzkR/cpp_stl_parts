@@ -10,11 +10,15 @@ class AVLTree {
         int height = 1;
         long long key;
 
-        explicit Node(long long key) { // а зачем explicit?
+        Node(long long key) { // а зачем explicit? : Clion ругается
             left = nullptr;
             right = nullptr;
             height = 1;
             this->key = key;
+        }
+
+        ~Node() {
+            delete this;
         }
     };
 
@@ -125,9 +129,17 @@ class AVLTree {
                 delete node;
                 node = nullptr;
             } else if (node->left == nullptr) {
-                *node = *node->right;// А где удаление старой вершины, ссылка на которую пропадёт?
+                Node *temp = node; // А где удаление старой вершины, ссылка на которую пропадёт? : А вот же оно
+                node = node->right;
+                temp->left = nullptr;
+                temp->right = nullptr;
+                delete temp;
             } else if (node->right == nullptr) {
-                *node = *node->left;// Аналогично
+                Node *temp = node; // вот
+                node = node->left;
+                temp->left = nullptr;
+                temp->right = nullptr;
+                delete temp;
             } else { // есть оба поддерева
                 Node* apex = findSuccessor(node->right); // минимум множества элементов, больших node (правое поддерево)
                 node->key = apex->key;
@@ -183,6 +195,12 @@ public:
             }
         }
         std::cout << ((apex == 1000000001) ? "none" : std::to_string(apex)) << std::endl;
+    }
+
+    ~AVLTree() {
+        delete root->right;
+        delete root->left;
+        delete root;
     }
 };
 
