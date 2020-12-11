@@ -17,9 +17,9 @@ class AVLTree {
             this->key = key;
         }
 
-        ~Node() {
-            delete this;//Навертел так же, как в Splay). Это рекурсивный вызов, он тут не нужен, так как у тебя всё равно внутри Node мало что происходит
-        }
+//        ~Node() {
+//            delete this;//Навертел так же, как в Splay). Это рекурсивный вызов, он тут не нужен, так как у тебя всё равно внутри Node мало что происходит
+//        }
     };
 
     Node* root = nullptr;
@@ -153,6 +153,14 @@ class AVLTree {
         return node;
     }
 
+    void Thanos(Node* node) {
+        if (node != nullptr) {
+            Thanos(node->left); // удаляем все слева
+            Thanos(node->right); // убиваем все справа
+            delete node; // уничтожаем вершину
+        }
+    }
+
 public:
     void insert(long long key) {
         root = insertNode(root, key);
@@ -197,10 +205,8 @@ public:
         std::cout << ((apex == 1000000001) ? "none" : std::to_string(apex)) << std::endl;
     }
 
-    ~AVLTree() {// И тут нужно сделать нормально
-        delete root->right;
-        delete root->left;
-        delete root;
+    ~AVLTree() { // И тут нужно сделать нормально : рекурсивное удаление всего дерева
+        Thanos(root);
     }
 };
 
