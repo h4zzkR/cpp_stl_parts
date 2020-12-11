@@ -23,12 +23,12 @@ class SplayTree {
             sum = key;
             max = key;
         }
-        
-        ~Node() {
-            delete this;//Это будет рекурсивный вызов деструктора, так как delete и есть его вызов. Деструктор сам очистит всё объекты внутри
-            //Главное доделать не тривиальные операции, к примеру освободить память после new. В данном случае деструктор не нужен, так как за объекты у
-            //тебя отвечает SplayTree. Либо можешь удаление дерева реализовать здесь удалением сыновей (если не nullptr)
-        }
+
+//        ~Node() { }
+        //Это будет рекурсивный вызов деструктора, так как delete и есть его вызов. Деструктор сам очистит всё объекты внутри
+        //Главное доделать не тривиальные операции, к примеру освободить память после new. В данном случае деструктор не нужен, так как за объекты у
+        //тебя отвечает SplayTree. Либо можешь удаление дерева реализовать здесь удалением сыновей (если не nullptr)
+        // тут люди говорят, что delete nullptr не будет иметь никакого эффекта (в т.ч. и негативного) : https://stackoverflow.com/a/6731484
     };
 
     Node *root = nullptr;
@@ -144,9 +144,9 @@ class SplayTree {
         std::pair<bool, Node*> outpair = find(nroot, key, insert);
         nroot = outpair.second;
         bool found = outpair.first;
-        
+
         if (found == 1 && insert != true || !found) {
-            
+
             if (nroot->key == key && root_in_left) {
                 Node *right_tree = nroot->right;
                 connect(right_tree, nullptr);
@@ -154,7 +154,7 @@ class SplayTree {
                 updateSum(nroot);
                 updateSum(right_tree);
                 return std::make_pair(nroot, right_tree);
-                
+
             } if (nroot->key >= key) {
                 Node *left_tree = nroot->left;
                 connect(left_tree, nullptr);
@@ -162,7 +162,7 @@ class SplayTree {
                 updateSum(nroot);
                 updateSum(left_tree);
                 return std::make_pair(left_tree, nroot);
-                
+
             } if (nroot->key < key) {
                 Node *right_tree = nroot->right;
                 connect(right_tree, nullptr);
@@ -191,6 +191,14 @@ class SplayTree {
             connect(right, left);
             updateSum(left);
             return left;
+        }
+    }
+
+    void Thanos(Node* node) {
+        if (node != nullptr) {
+            Thanos(node->left); // удаляем все слева
+            Thanos(node->right); // убиваем все справа
+            delete node; // уничтожаем вершину
         }
     }
 
@@ -234,21 +242,21 @@ public:
     }
 
     void insert(long long key) { // insert only in root
-            if (root == nullptr) {
-                root = new Node(nullptr, key);
-            } else {
-                std::pair<Node *, Node *> forest = split(root, key, true); // слева все ключи меньше, справа больше
-                if (!(forest.first == nullptr && forest.second == nullptr)) { // если элемента еще не было в куче
-                    Node *new_node = new Node(nullptr, key);
-                    connect(forest.first, new_node);
-                    connect(forest.second, new_node);
-                    new_node->left = forest.first;
-                    new_node->right = forest.second;
-                    updateSum(new_node);
-                    root = new_node;
-                }
+        if (root == nullptr) {
+            root = new Node(nullptr, key);
+        } else {
+            std::pair<Node *, Node *> forest = split(root, key, true); // слева все ключи меньше, справа больше
+            if (!(forest.first == nullptr && forest.second == nullptr)) { // если элемента еще не было в куче
+                Node *new_node = new Node(nullptr, key);
+                connect(forest.first, new_node);
+                connect(forest.second, new_node);
+                new_node->left = forest.first;
+                new_node->right = forest.second;
+                updateSum(new_node);
+                root = new_node;
             }
         }
+    }
 
     long long search_sum(long long l, long long r) {
         long long sum;
@@ -273,10 +281,8 @@ public:
         }
     }
 
-    ~SplayTree() {//Это лишь удалит левый, правый, и текущий элемент. Нужна другая тактика
-        delete root->left;
-        delete root->right;
-        delete root;
+    ~SplayTree() { // Это лишь удалит левый, правый, и текущий элемент. Нужна другая тактика : done
+        Thanos(root);
     }
 };
 
