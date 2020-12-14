@@ -14,17 +14,15 @@
 class BigInteger {
 //    static const long long BASE = 1e4;
 //    static const int BIT = 4; // на самом деле не бит, ну ладно.
-    static const long long BASE = 1e6;
-    static const int BIT = 6; // на самом деле не бит, ну ладно.
-    static const long long BLOCKS_N = 100;
+    static const long long BASE = 1e9;
+    static const int BIT = 9; // на самом деле не бит, ну ладно.
+    static const long long BLOCKS_N = 50;
 
     int size = 0;
     int blocks_size = 0;
     bool sign = true; // 1 is plus
 
-    bool is_null = false;
-
-    std::vector <long long> bits;
+    std::vector <long long> blocks;
 
     static int getIntSize(int num) { // количество цИфЕрОк
         return (num == 0) ? 1 : static_cast<int>(trunc(log10(num))) + 1;
@@ -36,32 +34,41 @@ class BigInteger {
 
     void setNull() {
         for (int i = 0; i < blocks_size; ++i)
-            bits[i] = 0;
+            blocks[i] = 0;
         size = 0;
         sign = true;
         blocks_size = 0;
-        is_null = true;
     }
 
     static bool isEqual(const BigInteger& first, const BigInteger& second, bool strict = true) {
-        if (strict) {
-            if (first.size == second.size && first.sign == second.sign) {
-                for (int i = 0; i < first.blocks_size; ++i) {
-                    if (first.bits[i] != second.bits[i])
-                        return false;
-                }
-                return true;
-            } else
-                return false;
-        } else {
-            if (first.size == second.size) {
-                for (int i = 0; i < first.blocks_size; ++i)
-                    if (first.bits[i] != second.bits[i])
-                        return false;
-                return false;
-            } else
-                return false;
+        if (first.size != second.size)
+            return false;
+        if (strict && (first.sign != second.sign)) // с учетом знака
+            return false;
+        else { // без учета знака
+            for (int i = 0; i < first.blocks_size; ++i)
+                if (first.blocks[i] != second.blocks[i])
+                    return false;
         }
+        return true;
+    }
+
+    static bool absGreater(const BigInteger &one, const BigInteger &two) { // one > b
+        if (!one.isNull() && two.isNull()) return true;
+        if (one.size > two.size) return true;
+        if (one.size == two.size) {
+            for (int i = one.blocks_size - 1; i >= 0; --i) {
+                if (one.blocks[i] > two.blocks[i])
+                    return true;
+                if (one.blocks[i] < two.blocks[i])
+                    return false;
+            }
+        }
+        return false;
+    }
+
+    static void changeSign(BigInteger& num) {
+        num.sign = !num.sign;
     }
 
     void addTo(BigInteger& first, const BigInteger& num);
@@ -92,7 +99,6 @@ class BigInteger {
             }
         }
 
-        BigInteger answ;
         BigInteger dvd = dividend_;
         dvd.sign = 1;
 
@@ -122,10 +128,8 @@ class BigInteger {
                     term *= 10;
                     term += dvd_s[index] - 48;
                     ++index;
-                } else {
+                } else
                     break;
-//                    --index;
-                }
             }
 
             if (term == dvr) {
@@ -147,53 +151,25 @@ class BigInteger {
                 quotient.append(current_quotient.toString());
             }
         }
-        if (mod) {
-            answ = term;
-        } else
-            answ = quotient;
-        return answ;
+        return (mod) ? term : quotient;
     }
 
 public:
 
     bool isNull() const {
-        if (size == 0 && blocks_size == 0 && bits[0] == 0)
-            return true;
-        else
-            return false;
+        return (size == 0 && blocks_size == 0 && blocks[0] == 0);
     }
 
     bool isOne() const {
-        if (size == 1 && blocks_size == 1 && bits[0] == 1)
-            return true;
-        else
-            return false;
+        return (size == 1 && blocks_size == 1 && blocks[0] == 1);
     }
 
     explicit operator bool() {
-        return (size != 0 && bits[0] != 0);
-    }
-
-    static bool absGreater(const BigInteger &one, const BigInteger &two) { // one > b
-        if (one.size == 0 && one.blocks_size == 0)
-            return false;
-        else if (two.size == 0 && two.blocks_size == 0)
-            return true;
-        else if (one.size > two.size)
-            return true;
-        else if (one.size < two.size)
-            return false;
-        for (int i = one.blocks_size - 1; i >= 0; --i) {
-            if (one.bits[i] > two.bits[i])
-                return true;
-            if (one.bits[i] < two.bits[i])
-                return false;
-        }
-        return false; // если равны
+        return (size != 0 && blocks[0] != 0);
     }
 
     BigInteger operator-() const {
-        BigInteger copy = *this;
+        BigInteger copy(*this);
         copy.sign = (sign == 0);
         return copy;
     }
@@ -225,104 +201,100 @@ public:
     BigInteger& operator/=(const BigInteger &num);
     BigInteger& operator%=(const BigInteger &num);
 
-    static void changeSign(BigInteger& num) {
-        num.sign = !num.sign;
-    }
-
-
     BigInteger& operator-=(const BigInteger& num);
-
     std::string toString() const;
 
     BigInteger() {
-        bits.resize(BLOCKS_N);
+        blocks.resize(BLOCKS_N);
         setNull();
     }
 
-    BigInteger(const int intnum) : BigInteger() { // inverse here
-        int integer = intnum;
+    BigInteger(const int integer) : BigInteger() {
+        int integer_ = integer;
         int i = 0;
-        sign = (integer >= 0);
         if (integer != 0) {
-            if (!sign) integer *= (-1);
-            size = getIntSize(integer);
+            sign = (integer >= 0);
+            if (sign == 0) integer_ *= (-1);
+            size = getIntSize(integer_);
             blocks_size = getBlocksSize(size);
-            while (integer) {
-                bits[i] = integer % BASE;
-                integer /= BASE;
+            while (integer_) {
+                blocks[i] = integer_ % BASE;
+                integer_ /= BASE;
                 ++i;
             }
         }
     }
 
+    explicit BigInteger(const char integer) : BigInteger(integer - 48) {}
+
     BigInteger(const BigInteger& num) : BigInteger() {
-        for (int i = 0; i < num.blocks_size; i++) {
-            bits[i] = num.bits[i];
-        }
         size = num.size;
         sign = num.sign;
         blocks_size = num.blocks_size;
-        is_null = num.is_null;
+        for (int i = 0; i < blocks_size; i++) {
+            blocks[i] = num.blocks[i];
+        }
     }
 
-    BigInteger(std::string number) : BigInteger() { // inverse here
-        if (number[0] == '-') {
-            sign = 0;
-//            lpos = 1;
-            number = number.substr(1, number.length());
-        }
-        else if (number.size() == 1 && number[0] == '0') setNull();
+    BigInteger(const std::string& num) : BigInteger() { // check
+        std::string number = num;
+        if (number.size() == 1 && number[0] == '0') setNull();
         else {
+            if (number[0] == '-') {
+                sign = 0;
+                number = number.substr(1, number.length());
+            }
             size = number.size();
-            int block = 0;
+            int block = 0, last_pos = size;
             blocks_size = getBlocksSize(size);
-            for (int i = static_cast<int>(number.length() - 1); i >= 0; i -= BigInteger::BIT) {
-                if (i < BigInteger::BIT)
-                    bits[block] = std::atoi(number.substr(0, i + 1).c_str());
-                else
-                    bits[block] = std::atoi(number.substr(i - BigInteger::BIT + 1, BigInteger::BIT).c_str());
+            for (int i = static_cast<int>(number.size() - 1); i >= 0; i -= BigInteger::BIT) {
+                if (i < BigInteger::BIT) {
+                    blocks[block] = std::atoi(number.substr(0, last_pos).c_str());
+                } else {
+                    last_pos = i - BigInteger::BIT + 1;
+                    blocks[block] = std::atoi(number.substr(last_pos, BigInteger::BIT).c_str());
+                }
                 ++block;
             }
         }
     }
 
     BigInteger(const char* cstring) : BigInteger(std::string(cstring)) {}
-
     BigInteger& operator=(const BigInteger& num);
-
     ~BigInteger() = default;
 };
 
 void BigInteger::addTo(BigInteger &first, const BigInteger &num) {
-    int term = 0, i = 0;
+    int i = 0;
+    long long term = 0;
     int max_size = std::max(first.blocks_size, num.blocks_size);
     first.blocks_size = 0;
     first.size = 0;
     while (i < max_size || term != 0) {
-        term = first.bits[i] + num.bits[i] + term;
-        first.bits[i] = term % BASE;
+        term = first.blocks[i] + num.blocks[i] + term;
+        first.blocks[i] = term % BASE;
         first.size += BIT;
         term /= BASE;
         ++i;
         ++blocks_size;
     }
     first.size -= BIT;
-    first.size += getIntSize(first.bits[first.blocks_size-1]);
+    first.size += getIntSize(first.blocks[first.blocks_size-1]);
 }
 
 void BigInteger::subtractFromBigger(BigInteger &from, const BigInteger &what) { // left operand is greater than right
-    int term = 0;
+    long long term = 0;
     int i = 0, max_size = from.blocks_size;
     int is_null = 0;
     from.blocks_size = 0;
     from.size = 0;
 
     while (i < max_size || term) {
-        from.bits[i] -= term + what.bits[i];
-        if (from.bits[i] < 0) {
+        from.blocks[i] -= term + what.blocks[i];
+        if (from.blocks[i] < 0) {
             term = 1;
-            from.bits[i] += BASE;
-        } else if (from.bits[i] == 0) {
+            from.blocks[i] += BASE;
+        } else if (from.blocks[i] == 0) {
             is_null += 1;
             term = 0;
         } else {
@@ -332,11 +304,11 @@ void BigInteger::subtractFromBigger(BigInteger &from, const BigInteger &what) { 
         ++i;
     }
     if (is_null != from.blocks_size) {
-        while (from.bits[from.blocks_size - 1] == 0 && from.blocks_size >= 0) { // в конце (ну т.е. начале) могли остаться нули
+        while (from.blocks[from.blocks_size - 1] == 0 && from.blocks_size >= 0) { // в конце (ну т.е. начале) могли остаться нули
             --from.blocks_size;
         }
         from.size = (from.blocks_size - 1) * BIT;
-        from.size += getIntSize(from.bits[from.blocks_size-1]);
+        from.size += getIntSize(from.blocks[from.blocks_size-1]);
     } else {
         blocks_size = 0;
         size = 0;
@@ -345,18 +317,18 @@ void BigInteger::subtractFromBigger(BigInteger &from, const BigInteger &what) { 
 }
 
 void BigInteger::subtractFromSmaller(BigInteger &from, const BigInteger &what) { // left operand is greater than right
-    int term = 0;
+    long long term = 0;
     int i = 0, max_size = what.blocks_size;
     int is_null = 0;
     from.blocks_size = 0;
     from.size = 0;
 
     while (i < max_size || term) {
-        from.bits[i] = what.bits[i] - from.bits[i] - term;
-        if (from.bits[i] < 0) {
+        from.blocks[i] = what.blocks[i] - from.blocks[i] - term;
+        if (from.blocks[i] < 0) {
             term = 1;
-            from.bits[i] += BASE;
-        } else if (from.bits[i] == 0) {
+            from.blocks[i] += BASE;
+        } else if (from.blocks[i] == 0) {
             is_null += 1;
             term = 0;
         } else {
@@ -365,14 +337,14 @@ void BigInteger::subtractFromSmaller(BigInteger &from, const BigInteger &what) {
         ++i;
         ++from.blocks_size;
     }
-//    from.size -= BIT; // remove last bits
+//    from.size -= BIT; // remove last blocks
 //    i = from.blocks_size - 1;
     if (is_null != from.blocks_size) {
-        while (from.bits[from.blocks_size - 1] == 0 && from.blocks_size >= 0) { // в конце (ну т.е. начале) могли остаться нули
+        while (from.blocks[from.blocks_size - 1] == 0 && from.blocks_size >= 0) { // в конце (ну т.е. начале) могли остаться нули
             --from.blocks_size;
         }
         from.size = (from.blocks_size - 1) * BIT;
-        from.size += getIntSize(from.bits[from.blocks_size-1]);
+        from.size += getIntSize(from.blocks[from.blocks_size-1]);
     } else {
         blocks_size = 0;
         size = 0;
@@ -407,7 +379,7 @@ bool operator>(const BigInteger& first, const BigInteger& num) {
         return true;
     } else if (first.sign < num.sign) {
         return false;
-    } else {
+    } else { // знаки равны
         bool compare = BigInteger::absGreater(first, num);
         if (first.sign == 0)
             return !compare;
@@ -428,7 +400,7 @@ bool operator<=(const BigInteger& first, const BigInteger& num) {
 }
 
 BigInteger &BigInteger::operator+=(const BigInteger &num) {
-    bool comparation = absGreater(*this, num);
+    bool compare = absGreater(*this, num);
     if (num.isNull())
         return *this;
     else if (isNull()) {
@@ -438,21 +410,20 @@ BigInteger &BigInteger::operator+=(const BigInteger &num) {
         if (sign == num.sign) {
             addTo(*this, num);
         } else if (sign == 1 && num.sign == 0) {
-            if (comparation) {
+            if (compare) {
                 subtractFromBigger(*this, num);
             } else {
                 subtractFromSmaller(*this, num);
                 sign = 0;
             }
         } else if (sign == 0 && num.sign == 1) {
-            if (comparation) {
+            if (compare) {
                 subtractFromBigger(*this, num);
             } else {
                 subtractFromSmaller(*this, num);
                 sign = 1;
             }
         }
-        if (isNull()) is_null = true;
         return *this;
     }
 }
@@ -462,15 +433,13 @@ BigInteger &BigInteger::operator-=(const BigInteger &num) {
     if (sign == 1 && num.sign == 1) {
         if (compare) { // left is greater 10 - 5
             subtractFromBigger(*this, num);
-            sign = 1;
         } else {
             subtractFromSmaller(*this, num); // 5 - 10
-            sign = 0;
+            sign = false;
         }
     } else if (sign == 0 && num.sign == 0) {
-        if (compare == 1) { // левый длиннее
-            subtractFromBigger(*this, num); // -5 - (-2) = 2 - 5
-            sign = (size != 0) ? 0 : 1;
+        if (compare) { // левый длиннее
+            subtractFromBigger(*this, num); // -55 - (-2) = 2 - 55
         } else { // -5 - (-10) = 10 - 5 > 0
             subtractFromSmaller(*this, num);
             sign = 1;
@@ -478,7 +447,6 @@ BigInteger &BigInteger::operator-=(const BigInteger &num) {
     } else if ((sign == 1 && num.sign == 0) || (sign == 0 && num.sign == 1)) {
         addTo(*this, num);
     }
-    if (isNull()) is_null = true;
     return *this;
 }
 
@@ -506,31 +474,24 @@ BigInteger operator-(const BigInteger& first, const BigInteger& second) {
 }
 
 BigInteger operator/(const BigInteger &dvd, const BigInteger &dvr) {
-    BigInteger answ = BigInteger::divMod(dvd, dvr, false);
-    if (dvd.sign != dvr.sign)
-        answ.sign = 0;
-    else
-        answ.sign = 1;
+    BigInteger answ;
+    if (dvd == dvr) answ = 1;
+    else answ = BigInteger::divMod(dvd, dvr, false);
+    (dvd.sign != dvr.sign) ? answ.sign = 0 : answ.sign = 1;
     return answ;
 }
 
-BigInteger operator%(const BigInteger &dvd, const BigInteger &dvr) {
+BigInteger operator%(const BigInteger &dvd, const BigInteger &dvr) { // check
+    if (dvd == dvd)
+        return 0;
     if (dvd.isNull())
         return 0;
     if (!BigInteger::absGreater(dvd, dvr)) {
         return dvd;
     }
     BigInteger answ = BigInteger::divMod(dvd, dvr, true);
-    if (!answ.isNull()) {
-        if (dvd.sign == 0 && dvr.sign == 1)
-            BigInteger::changeSign(answ);
-        else if (dvd.sign == 0 && dvr.sign == 0)
-            BigInteger::changeSign(answ);
-        else if (dvd.sign == 1 && dvr.sign == 0) {
-            return answ;
-//            answ = dvr - answ;
-//            BigInteger::changeSign(answ);
-        }
+    if (!answ.isNull() && dvd.sign == 0) {
+        BigInteger::changeSign(answ);
     }
     return answ;
 }
@@ -553,23 +514,26 @@ BigInteger operator*(const BigInteger &num1, const BigInteger &num) {
             min_size = num1.blocks_size;
         }
 
-        for (int i = 0; i < max_size + 1; i++) {
-            for (int j = 0; j < min_size + 1; j++) {
-                copy.bits[i + j] += num1.bits[i] * num.bits[j];
+        for (int i = 0; i < max_size + 1; ++i) {
+            for (int j = 0; j < min_size + 1; ++j) {
+                copy.blocks[i + j] += num1.blocks[i] * num.blocks[j];
             }
         }
 
-        int last_nnul = 0, term = 0;
-        for (int i = 0; i < BigInteger::BLOCKS_N; i++) {
-            copy.bits[i] += term;
-            term = (copy.bits[i] - term > BigInteger::BASE) ? static_cast<int>(copy.bits[i] / BigInteger::BASE) : 0;
-            copy.bits[i] %= BigInteger::BASE;
-            if (copy.bits[i] != 0) last_nnul = i;
+        int last_nnul = 0;
+        long long term = 0;
+//        int term = 0;
+        for (int i = 0; i < BigInteger::BLOCKS_N; ++i) {
+            copy.blocks[i] += term;
+            term = static_cast<long long>(copy.blocks[i] / BigInteger::BASE);
+//            term = (copy.blocks[i] - term > BigInteger::BASE) ? static_cast<int>(copy.blocks[i] / BigInteger::BASE) : 0;
+            copy.blocks[i] %= BigInteger::BASE;
+            if (copy.blocks[i] != 0) last_nnul = i;
         }
 
         copy.blocks_size = last_nnul + 1;
         copy.size = BigInteger::BIT * (copy.blocks_size - 1);
-        copy.size += BigInteger::getIntSize(copy.bits[copy.blocks_size - 1]);
+        copy.size += BigInteger::getIntSize(copy.blocks[copy.blocks_size - 1]);
     }
     if (num1.sign != num.sign) BigInteger::changeSign(copy);
     return copy;
@@ -584,7 +548,7 @@ BigInteger &BigInteger::operator=(const BigInteger &num) {
     if (num != *this) {
         setNull();
         for (int i = 0; i < num.blocks_size; i++) {
-            bits[i] = num.bits[i];
+            blocks[i] = num.blocks[i];
         }
         size = num.size;
         sign = num.sign;
@@ -597,11 +561,11 @@ std::string BigInteger::toString() const {
     if (isNull()) {
         return "0";
     } else {
-        std::string number = std::to_string(bits[blocks_size - 1]);
+        std::string number = std::to_string(blocks[blocks_size - 1]);
         if (sign == 0) number.insert(0, "-");
         std::string block;
         for (int i = blocks_size - 2; i >= 0; --i) {
-            block = std::to_string(bits[i]);
+            block = std::to_string(blocks[i]);
             block.insert(0, std::string(BIT - block.size(), '0'));
             number += block;
         }
@@ -772,48 +736,50 @@ Rational operator%(const Rational &num, const Rational &num2) {
 }
 
 #endif //BIGINT_BIGINTEGER_H
-
-void command_manager() {
-    std::string a, c, b;
-    std::cin >> a >> c >> b;
-    BigInteger aa = a;
-    BigInteger bb = b;
-    if (c == "+") {
-        std::cout << aa + bb;
-    } else if (c == "-") {
-        std::cout << aa - bb;
-    } else if (c == "*") {
-        std::cout << aa * bb;
-    } else if (c == "/") {
-        std::cout << aa / bb;
-    } else if (c == ">") {
-        std::cout << int((aa > bb));
-    } else if (c == "<") {
-        std::cout << int((aa < bb));
-    } else if (c == ">=") {
-        std::cout << int((aa >= bb));
-    } else if (c == "<=") {
-        std::cout << int((aa <= bb));
-    } else if (c == "==") {
-        std::cout << int((aa == bb));
-    } else if (c == "!=") {
-        std::cout << int((aa != bb));
-    }
-    else if (c == "%") {
-        std::cout << aa % bb;
-    }
-    std::cout << '\n';
-}
-
-
-int main() {
+//
+//void command_manager() {
+//    std::string a, c, b;
+//    std::cin >> a >> c >> b;
+//    const BigInteger aa = a;
+//    const BigInteger bb = b;
+//    if (c == "+") {
+//        std::cout << aa + bb;
+//    } else if (c == "-") {
+//        std::cout << aa - bb;
+//    } else if (c == "*") {
+//        std::cout << aa * bb;
+//    } else if (c == "/") {
+//        std::cout << aa / bb;
+//    } else if (c == ">") {
+//        std::cout << int((aa > bb));
+//    } else if (c == "<") {
+//        std::cout << int((aa < bb));
+//    } else if (c == ">=") {
+//        std::cout << int((aa >= bb));
+//    } else if (c == "<=") {
+//        std::cout << int((aa <= bb));
+//    } else if (c == "==") {
+//        std::cout << int((aa == bb));
+//    } else if (c == "!=") {
+//        std::cout << int((aa != bb));
+//    }
+//    else if (c == "%") {
+//        std::cout << aa % bb;
+//    }
+//    std::cout << '\n';
+//}
+////
+////
+//int main() {
 //    int n;
-//    std::cin >> n;
-//    for (int i = 0; i < n; ++i)
-//        command_manager();
-    const BigInteger a = 2352545;
-    int aa = 2352545;
-    int bb = 43434343;
-    std::cout << (a > aa) << (a != aa);
-    return 0;
-}
+////    std::cin >> n;
+////    for (int i = 0; i < n; ++i)
+////        command_manager();
+////    const BigInteger b = "482430964528574771612411798521791618669600183844820215874122319733200971388989470581161798916991696892637217713157398462195266666447602271979485449883160253921192519616120356578708062795791748367941557214908871";
+//////    assert(b.toString() == "482430964528574771612411798521791618669600183844820215874122319733200971388989470581161798916991696892637217713157398462195266666447602271979485449883160253921192519616120356578708062795791748367941557214908871");
+//    BigInteger a = -10;
+//    BigInteger b = -5;
+//    a += b;
+//    std::cout << a;
+//    return 0;
+//}
