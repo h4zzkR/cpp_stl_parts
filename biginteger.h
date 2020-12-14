@@ -16,7 +16,7 @@ class BigInteger {
 //    static const int BIT = 4; // на самом деле не бит, ну ладно.
     static const long long BASE = 1e9;
     static const int BIT = 9; // на самом деле не бит, ну ладно.
-    static const long long BLOCKS_N = 50;
+    static const long long BLOCKS_N = 200;
 
     int size = 0;
     int blocks_size = 0;
@@ -482,7 +482,7 @@ BigInteger operator/(const BigInteger &dvd, const BigInteger &dvr) {
 }
 
 BigInteger operator%(const BigInteger &dvd, const BigInteger &dvr) { // check
-    if (dvd == dvd)
+    if (dvd == dvr)
         return 0;
     if (dvd.isNull())
         return 0;
@@ -736,47 +736,48 @@ Rational operator%(const Rational &num, const Rational &num2) {
 }
 
 #endif //BIGINT_BIGINTEGER_H
-//
-//void command_manager() {
-//    std::string a, c, b;
-//    std::cin >> a >> c >> b;
-//    const BigInteger aa = a;
-//    const BigInteger bb = b;
-//    if (c == "+") {
-//        std::cout << aa + bb;
-//    } else if (c == "-") {
-//        std::cout << aa - bb;
-//    } else if (c == "*") {
-//        std::cout << aa * bb;
-//    } else if (c == "/") {
-//        std::cout << aa / bb;
-//    } else if (c == ">") {
-//        std::cout << int((aa > bb));
-//    } else if (c == "<") {
-//        std::cout << int((aa < bb));
-//    } else if (c == ">=") {
-//        std::cout << int((aa >= bb));
-//    } else if (c == "<=") {
-//        std::cout << int((aa <= bb));
-//    } else if (c == "==") {
-//        std::cout << int((aa == bb));
-//    } else if (c == "!=") {
-//        std::cout << int((aa != bb));
-//    }
-//    else if (c == "%") {
-//        std::cout << aa % bb;
-//    }
-//    std::cout << '\n';
-//}
+
+void command_manager() {
+    std::string a, c, b;
+    std::cin >> a >> c >> b;
+    const BigInteger aa = a;
+    const BigInteger bb = b;
+    if (c == "+") {
+        std::cout << aa + bb;
+    } else if (c == "-") {
+        std::cout << aa - bb;
+    } else if (c == "*") {
+        std::cout << aa * bb;
+    } else if (c == "/") {
+        std::cout << aa / bb;
+    } else if (c == ">") {
+        std::cout << int((aa > bb));
+    } else if (c == "<") {
+        std::cout << int((aa < bb));
+    } else if (c == ">=") {
+        std::cout << int((aa >= bb));
+    } else if (c == "<=") {
+        std::cout << int((aa <= bb));
+    } else if (c == "==") {
+        std::cout << int((aa == bb));
+    } else if (c == "!=") {
+        std::cout << int((aa != bb));
+    }
+    else if (c == "%") {
+        std::cout << aa % bb;
+    }
+    std::cout << '\n';
+}
 ////
 ////
 //int main() {
 //    int n;
-////    std::cin >> n;
-////    for (int i = 0; i < n; ++i)
-////        command_manager();
-////    const BigInteger b = "482430964528574771612411798521791618669600183844820215874122319733200971388989470581161798916991696892637217713157398462195266666447602271979485449883160253921192519616120356578708062795791748367941557214908871";
-//////    assert(b.toString() == "482430964528574771612411798521791618669600183844820215874122319733200971388989470581161798916991696892637217713157398462195266666447602271979485449883160253921192519616120356578708062795791748367941557214908871");
+//    std::cin >> n;
+//    for (int i = 0; i < n; ++i)
+//        command_manager();
+//    BigInteger a = "944056378772093043145649633345434714550203648413095474431004559525090854869900666631154812102775844134500068981994894178449978962689230344482444439571178810443341548350539078808180609004555557784805711763278472476309085027062603898480658152053593442154598441830932550187182339416837745747498678693213503986720";
+//    BigInteger b = "5027857645568181866223649830586550074143050932531550509565256049254533946495828098551922386089288479210594411086496583340918131373527244346676841029974953710589302110879411706534757663736360206032921020931658578524066012509047250235117269177328873510040352936917808839345830040609417448200314460798594927210";
+//    std::cout << a * b;
 //    BigInteger a = -10;
 //    BigInteger b = -5;
 //    a += b;
