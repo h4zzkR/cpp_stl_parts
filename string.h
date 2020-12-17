@@ -3,19 +3,16 @@
 
 #include <iostream>
 #include <cstring>
+#include <algorithm>
 
 class String {
 private:
     size_t size = 0;
     size_t capacity = 1;
     const int capacity_factor = 2; // множитель для размеров строк
-    char* str = new char[capacity];
+    char* str;
 
-    void createString() {// Разве это не участь конструктора?
-        str = new char[capacity];
-    }
-
-    bool willExpand() const {// Такую проверку проще явно породить
+    bool willExpand() const {// Такую проверку проще явно породить // как?
         return size == capacity;
     }
 
@@ -31,51 +28,41 @@ private:
         delete[] str;
         str = nullptr;
     }
-    
-    // Тебе бы хватило только этой функции, назвал бы resizeCapacity и применял и когда нужно уменьшить
-    void expandCapacity() { // for "long" push_back, get more memory
-        capacity = (size == 0) ? 1 : size * capacity_factor;
-    }
 
-    void shrinkCapacity() { // for "long" pop_back, cut memory
-        capacity = (size == 0) ? 1 : int(capacity / 2);
+    // Тебе бы хватило только этой функции, назвал бы resizeCapacity и применял и когда нужно уменьшить
+    void resizeCapacity(bool mode) {
+        if (mode)
+            capacity = (size == 0) ? 1 : size * capacity_factor;
+        else
+            capacity = (size == 0) ? 1 : static_cast<int>(capacity / 2);
     }
 
     char* bufcpy() {
         char* buf;
-        buf = new char[size];
-        memcpy(buf, str, size);
+        buf = new char[capacity];
+        std::copy(str, str + size, buf);
         return buf;
-    }
+    } // aa
 
 public:
-    void push_back(const char c) { // fix end
+    void push_back(const char c) { // TODO
         if (willExpand()) {
+            resizeCapacity(1);
             char* buf = bufcpy();
-//            char* temp = str;
-            deleteString();
-            expandCapacity();
-            createString();// Зачем, у тебя ведь есть буфер, который ты можешь забрать, а так у тебя проводится 2 копирования
-            memcpy(str, buf, size);
-
-            delete [] buf; buf = nullptr;
+            delete [] str;
+            str = buf;
         }
         str[size++] = c;
-//        str[size] = '\0';
     }
 
-    void pop_back() {
+    void pop_back() { // TODO
         if (willShrink()) {
             size--;
+            resizeCapacity(0);
             char* buf = bufcpy();
-            deleteString();
-            shrinkCapacity();
-            createString();// Аналогично
-            memcpy(str, buf, size);
-
-            delete [] buf; buf = nullptr;
+            delete [] str;
+            str = buf;
         } else { size--; }
-//        str[size] = '\0';
     }
 
     char& front();
@@ -83,17 +70,26 @@ public:
     char front() const;
     char back() const;
     bool empty() const;
-    
+
     void clear();
     size_t length() const;
-    
+
     size_t find(const String& substring) const;
     size_t rfind(const String& substring) const;
     String substr(int start, int count) const;
 
     // Operators overloading
 
-    friend bool operator==(const String& first, const String& second);// А зачем, почти никто не пишет "abc" == string, всегда пишется наоборот string == "abc"
+    bool operator==(const String& second) const {
+        if (size != second.size)
+            return false;
+        for (int i = 0; i < static_cast<int>(size); i++) {
+            if (str[i] != second[i])
+                return false;
+        }
+        return true;
+    }
+
     friend std::ostream& operator<< (std::ostream &out, const String& str);
     friend std::istream& operator>> (std::istream &inp, const String& str);
 
@@ -103,16 +99,16 @@ public:
         size += to_add.size;
 
         deleteString();
-        expandCapacity();// Почему бы не проверить на факт надобности расширяться?
-        createString();
+        if (willExpand())
+            resizeCapacity(1);// Почему бы не проверить на факт надобности расширяться?
+        str = new char[capacity];
         memcpy(str, buf, old_size * sizeof(char));
         memcpy(str + old_size, to_add.str, to_add.length());
-
         delete [] buf; buf = nullptr;
         return *this;
     }
-    //Здесь можно убрать const
-    String& operator+=(const char to_add) { // += chars // delete for cast
+
+    String& operator+=(char to_add) { // += chars // delete for cast
         push_back(to_add);
         return *this;
     }
@@ -122,36 +118,50 @@ public:
             deleteString();
             capacity = new_string.capacity;
             size = new_string.size;
-            createString();
+            str = new char[capacity];
             memcpy(str, new_string.str, new_string.size);
         }
-        return *this; // разыменовали указатель this // А зачем этот комментарий?
+        return *this;
     }
 
     // Аналогично, const не нужен, так как всё равно копирование
-    char& operator[](const int i) {// long long для работы с памятью, в int максимум 4 Гб влезут. А по хорошему, если без питонячести, то нужно принимать size_t
-        if (i < 0) // a[-1] returns last char
-            return str[size - i*(-1)]; // some pythonic here
-        else
-            return str[i];
+    char& operator[](size_t i) {// long long для работы с памятью, в int максимум 4 Гб влезут. А по хорошему, если без питонячести, то нужно принимать size_t
+        return str[i];
     }
 
-    char operator[](const int i) const {// Аналогично
-        if (i < 0) // a[-1] returns last char
-            return str[size - i*(-1)]; // some pythonic here
-        else
-            return str[i];
+    char operator[](size_t i) const {// Аналогично
+        return str[i];
     }
 
     String () {
         size = 0;
         str = new char[capacity];
-    } // конструктор по умолчанию.
+    }
 
-    String (int n, char c);
-    String (const char* cstring);
-    String (const String &copy_str); // конструктор копирования
-    String (char cchar);
+    String(int n, char c) { // set constructor
+        size = (size_t)n;
+        resizeCapacity(1);
+        str = new char[capacity];
+//        createString();// Зачем, у тебя ведь по умолчанию уже создан какой то массив, который кстати в памяти затеряется
+        memset(str, c, n);
+    }
+
+    String (const char* cstring) {  // C strings constructor
+        size = strlen(cstring);
+        resizeCapacity(1);
+        str = new char[capacity];
+        memcpy(str, cstring, size);
+//    str[size] = '0'; // remove \0
+    }
+
+    String (const String &copy_str) { // copy constructor
+        size = copy_str.size;
+        capacity = copy_str.capacity;
+        str = new char[capacity];
+        memcpy(str, copy_str.str, size);
+    }
+
+    String (const char cchar) : String(1, cchar) { } // char constructor
 
     ~String() {
         deleteString();
@@ -164,15 +174,15 @@ String operator+(const String& first, const String& second) {
     return copy;
 }
 
-bool operator==(const String& first, const String& second) {
-    if (first.size != second.size)
-        return false;
-    for (int i = 0; i < (int)first.size; i++) {
-        if (first[i] != second[i])
-            return false;
-    }
-    return true;
-}
+//bool operator==(const String& first, const String& second) {
+//    if (first.size != second.size)
+//        return false;
+//    for (int i = 0; i < (int)first.size; i++) {
+//        if (first[i] != second[i])
+//            return false;
+//    }
+//    return true;
+//}
 
 std::ostream& operator<< (std::ostream &out, const String& str) {
     for (int i = 0; i < (int)str.size; i++) {
@@ -219,8 +229,9 @@ size_t String::length() const {
 void String::clear() {
     deleteString();
     size = 0;
-    expandCapacity();// Ну да, на уменьшение.... Г-логика
-    createString();
+    resizeCapacity(0); // Ну да, на уменьшение.... Г-логика
+    str = new char[capacity];
+//    createString();
 }
 
 size_t String::find(const String& substring) const {
@@ -228,7 +239,7 @@ size_t String::find(const String& substring) const {
     int index = size;
     if (substring.size == 0)
         return 0;
-    for (int i = 0; i < (int)size; i++) {// long long
+    for (size_t i = 0; i < size; i++) { // long long
         if (pointer == (int)substring.size)
             break;
         if (str[i] == substring[pointer]) {
@@ -248,7 +259,7 @@ size_t String::rfind(const String& substring) const {
     int index = size;
     if (substring.size == 0)
         return 0;
-    for (int i = (int)(size - 1); i >= 0; i--) {// long long
+    for(size_t i = size - 1; i != 0; --i) { // long long
         if (pointer < 0)
             break;
         if (str[i] == substring[pointer]) {
@@ -259,37 +270,19 @@ size_t String::rfind(const String& substring) const {
             index = size;
         }
     }
-    return (index != (int)size) ? index : index;
+    return index;
+//    return (index != (int)size) ? index : index;
 }
 
-String String::substr(int start, int count) const {
-    String copy(count, '\0');
-    memcpy(copy.str, str + start, count);// Два memcpy...
+String String::substr(int start, int count) const { // TODO
+    String copy;
+    for (size_t i = 0; i < static_cast<size_t>(count); ++i) {
+        copy.push_back(str[start + i]);
+    }
+//    std::copy(str + start, str + count, copy.str);
+//    String copy(count, '\0');
+//    memcpy(copy.str, str + start, count);// Два memcpy...
     return copy;
 }
-
-String::String(int n, char c) { // set constructor
-    size = (int)n;
-    expandCapacity();
-    createString();// Зачем, у тебя ведь по умолчанию уже создан какой то массив, который кстати в памяти затеряется
-    memset(str, c, n);
-}
-
-String::String (const char* cstring) {  // C strings constructor
-    size = strlen(cstring);
-    expandCapacity();
-    createString();// Аналогично
-    memcpy(str, cstring, size);
-//    str[size] = '0'; // remove \0
-}
-
-String::String (const String &copy_str) { // copy constructor
-    size = copy_str.size;
-    capacity = copy_str.capacity;
-    createString();// Аналогично
-    memcpy(str, copy_str.str, size);
-}
-
-String::String (const char cchar) : String(1, cchar) { } // char constructor
 
 #endif //STRING_STRING_H
