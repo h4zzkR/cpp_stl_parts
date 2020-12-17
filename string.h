@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <algorithm>
+#include <cmath>
 
 class String {
 private:
@@ -12,12 +13,8 @@ private:
     const int capacity_factor = 2; // множитель для размеров строк
     char* str;
 
-    bool willExpand() const {// Такую проверку проще явно породить // как? // В лоб) вместо willExpand так и писать size == capacity, бритва оккама как грится)
-        return size == capacity;
-    }
-
     bool willShrink() const {
-        if ((int)size < int(capacity / capacity_factor)) {
+        if (size < static_cast<size_t>(capacity / capacity_factor)) {
             return true;
         } else {
             return false;
@@ -29,7 +26,7 @@ private:
         str = nullptr;
     }
 
-   
+
     void resizeCapacity(bool mode) {
         if (mode)
             capacity = (size == 0) ? 1 : size * capacity_factor;
@@ -39,17 +36,28 @@ private:
         // до нужного размера)
     }
 
+//    void resizeCapacity(double factor) { // Мистер Анджело, мистер Мещерин передает вам segfault : https://contest.yandex.ru/contest/21872/run-report/45618173/
+//        capacity = (size == 0) ? 1 : static_cast<size_t>(size * factor);
+//        std::cerr << static_cast<size_t>(size * factor) << ' ';
+//    }
+
     char* bufcpy() {
         char* buf;
         buf = new char[capacity];
         std::copy(str, str + size, buf);
         return buf;
-    } // aa
+    }
+
+    String (int n) { // attention, empty initialization
+        size = n;
+        capacity = capacity_factor * n;
+    }
 
 public:
     void push_back(const char c) { // TODO
-        if (willExpand()) {
+        if (size == capacity) {
             resizeCapacity(1);
+//            resizeCapacity(capacity_factor);
             char* buf = bufcpy();
             delete [] str;
             str = buf;
@@ -60,6 +68,7 @@ public:
     void pop_back() { // TODO
         if (willShrink()) {
             size--;
+//            resizeCapacity(1.0 / capacity_factor);
             resizeCapacity(0);
             char* buf = bufcpy();
             delete [] str;
@@ -101,8 +110,9 @@ public:
         size += to_add.size;
 
         deleteString();
-        if (willExpand())
+        if (size == capacity)
             resizeCapacity(1);
+//            resizeCapacity(capacity_factor);
         str = new char[capacity];
         memcpy(str, buf, old_size * sizeof(char));
         memcpy(str + old_size, to_add.str, to_add.length());
@@ -128,12 +138,18 @@ public:
 
     // Ну блин, я не хотел так сразу от питона избавляться, просто сказал, что long long был бы лучше)) А про size_t так, к слову)
     // Но как сам хочешь
-    char& operator[](size_t i) {
-        return str[i];
+    char& operator[](long long i) {
+        if (i < 0)
+            return str[size - i*(-1)];
+        else
+            return str[i];
     }
 
-    char operator[](size_t i) const {
-        return str[i];
+    char operator[](long long i) const {
+        if (i < 0)
+            return str[size - i*(-1)];
+        else
+            return str[i];
     }
 
     String () {
@@ -144,6 +160,7 @@ public:
     String(int n, char c) { // set constructor
         size = (size_t)n;
         resizeCapacity(1);
+//        resizeCapacity(capacity_factor);
         str = new char[capacity];
         memset(str, c, n);
     }
@@ -151,6 +168,7 @@ public:
     String (const char* cstring) {  // C strings constructor
         size = strlen(cstring);
         resizeCapacity(1);
+//        resizeCapacity(capacity_factor);
         str = new char[capacity];
         memcpy(str, cstring, size);
 //    str[size] = '0'; // remove \0
@@ -175,16 +193,6 @@ String operator+(const String& first, const String& second) {
     copy += second;
     return copy;
 }
-
-//bool operator==(const String& first, const String& second) {
-//    if (first.size != second.size)
-//        return false;
-//    for (int i = 0; i < (int)first.size; i++) {
-//        if (first[i] != second[i])
-//            return false;
-//    }
-//    return true;
-//}
 
 std::ostream& operator<< (std::ostream &out, const String& str) {
     for (int i = 0; i < (int)str.size; i++) {
@@ -231,7 +239,7 @@ size_t String::length() const {
 void String::clear() {
     deleteString();
     size = 0;
-    resizeCapacity(0); // Ну да, на уменьшение.... Г-логика
+    resizeCapacity(0);
     str = new char[capacity];
 //    createString();
 }
@@ -241,7 +249,7 @@ size_t String::find(const String& substring) const {
     int index = size;
     if (substring.size == 0)
         return 0;
-    for (size_t i = 0; i < size; i++) { 
+    for (size_t i = 0; i < size; i++) {
         if (pointer == (int)substring.size)
             break;
         if (str[i] == substring[pointer]) {
@@ -261,7 +269,7 @@ size_t String::rfind(const String& substring) const {
     int index = size;
     if (substring.size == 0)
         return 0;
-    for(size_t i = size - 1; i != 0; --i) { 
+    for(size_t i = size - 1; i != 0; --i) {
         if (pointer < 0)
             break;
         if (str[i] == substring[pointer]) {
@@ -278,16 +286,22 @@ size_t String::rfind(const String& substring) const {
 
 String String::substr(int start, int count) const { // Нене, раньше было лучше. Смотри, в идеале ты должен иметь приватный конструктор от числа элементов
     // Который не инициализирует память ничем по факту. То есть не String(count, symbol), а просто String (count)
-    // С помощью него него создаёшь String, после чего копируешь кусочек строки в одно действие. 
+    // С помощью него него создаёшь String, после чего копируешь кусочек строки в одно действие.
     // Второй вариант, создать дефолтный стринг и для него создать новый массив прям здесь, который и положить в его память (не забыв освободить предыдущий)
     // А здесь теперь будет не 2 обращения к памяти, а по количеству расширений, что может быть много
-    String copy;
-    for (size_t i = 0; i < static_cast<size_t>(count); ++i) {
-        copy.push_back(str[start + i]);
-    }
-//    std::copy(str + start, str + count, copy.str);
+
+    String copy(count);
+    char* buf = new char[count * capacity_factor];
+    memcpy(buf, str + start, count);
+    copy.str = buf;
+    copy.str[count + 1] = '\0'; // дичь какая-то, без этой строчки segfault
+//    std::copy(str + start, str + count, buf);
+//    delete [] copy.str;
+//    copy.str = buf;
+
+//    memcpy(copy.str, str + start, count);
 //    String copy(count, '\0');
-//    memcpy(copy.str, str + start, count);// Два memcpy...
+//    memcpy(copy.str, str + start, count);
     return copy;
 }
 
