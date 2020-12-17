@@ -505,17 +505,17 @@ BigInteger operator*(const BigInteger &num1, const BigInteger &num) {
     else if (num.isOne())
         copy = num1;
     else {
-        int min_size, max_size;
-        if (num1.blocks_size >= num.blocks_size) {
-            max_size = num1.blocks_size;
-            min_size = num.blocks_size;
-        } else {
-            max_size = num.blocks_size;
-            min_size = num1.blocks_size;
-        }
+//        int min_size, max_size;
+//        if (num1.blocks_size >= num.blocks_size) {
+//            max_size = num1.blocks_size;
+//            min_size = num.blocks_size;
+//        } else {
+//            max_size = num.blocks_size;
+//            min_size = num1.blocks_size;
+//        }
 
-        for (int i = 0; i < max_size + 1; ++i) {
-            for (int j = 0; j < min_size + 1; ++j) {
+        for (int i = 0; i < BigInteger::BLOCKS_N; ++i) {
+            for (int j = 0; j < BigInteger::BLOCKS_N; ++j) {
                 copy.blocks[i + j] += num1.blocks[i] * num.blocks[j];
             }
         }
