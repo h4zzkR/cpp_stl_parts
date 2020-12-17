@@ -8,11 +8,11 @@
 class String {
 private:
     size_t size = 0;
-    size_t capacity = 1;
+    size_t capacity = 0;
     const int capacity_factor = 2; // множитель для размеров строк
     char* str;
 
-    bool willExpand() const {// Такую проверку проще явно породить // как?
+    bool willExpand() const {// Такую проверку проще явно породить // как? // В лоб) вместо willExpand так и писать size == capacity, бритва оккама как грится)
         return size == capacity;
     }
 
@@ -29,12 +29,14 @@ private:
         str = nullptr;
     }
 
-    // Тебе бы хватило только этой функции, назвал бы resizeCapacity и применял и когда нужно уменьшить
+   
     void resizeCapacity(bool mode) {
         if (mode)
             capacity = (size == 0) ? 1 : size * capacity_factor;
         else
-            capacity = (size == 0) ? 1 : static_cast<int>(capacity / 2);
+            capacity = (size == 0) ? 1 : static_cast<int>(capacity / 2);// И это тоже лишнее, ведь когда size*capacity_factor < capacity как раз будет уменьшение
+        // причём ровно на нужную величину, зависящую от фактора, а не просто в 2 раза, поэтому по факту только 1 строчки должно хватить, без режимов. Настоящий ресайз
+        // до нужного размера)
     }
 
     char* bufcpy() {
@@ -100,7 +102,7 @@ public:
 
         deleteString();
         if (willExpand())
-            resizeCapacity(1);// Почему бы не проверить на факт надобности расширяться?
+            resizeCapacity(1);
         str = new char[capacity];
         memcpy(str, buf, old_size * sizeof(char));
         memcpy(str + old_size, to_add.str, to_add.length());
@@ -124,12 +126,13 @@ public:
         return *this;
     }
 
-    // Аналогично, const не нужен, так как всё равно копирование
-    char& operator[](size_t i) {// long long для работы с памятью, в int максимум 4 Гб влезут. А по хорошему, если без питонячести, то нужно принимать size_t
+    // Ну блин, я не хотел так сразу от питона избавляться, просто сказал, что long long был бы лучше)) А про size_t так, к слову)
+    // Но как сам хочешь
+    char& operator[](size_t i) {
         return str[i];
     }
 
-    char operator[](size_t i) const {// Аналогично
+    char operator[](size_t i) const {
         return str[i];
     }
 
@@ -142,7 +145,6 @@ public:
         size = (size_t)n;
         resizeCapacity(1);
         str = new char[capacity];
-//        createString();// Зачем, у тебя ведь по умолчанию уже создан какой то массив, который кстати в памяти затеряется
         memset(str, c, n);
     }
 
@@ -239,7 +241,7 @@ size_t String::find(const String& substring) const {
     int index = size;
     if (substring.size == 0)
         return 0;
-    for (size_t i = 0; i < size; i++) { // long long
+    for (size_t i = 0; i < size; i++) { 
         if (pointer == (int)substring.size)
             break;
         if (str[i] == substring[pointer]) {
@@ -259,7 +261,7 @@ size_t String::rfind(const String& substring) const {
     int index = size;
     if (substring.size == 0)
         return 0;
-    for(size_t i = size - 1; i != 0; --i) { // long long
+    for(size_t i = size - 1; i != 0; --i) { 
         if (pointer < 0)
             break;
         if (str[i] == substring[pointer]) {
@@ -274,7 +276,11 @@ size_t String::rfind(const String& substring) const {
 //    return (index != (int)size) ? index : index;
 }
 
-String String::substr(int start, int count) const { // TODO
+String String::substr(int start, int count) const { // Нене, раньше было лучше. Смотри, в идеале ты должен иметь приватный конструктор от числа элементов
+    // Который не инициализирует память ничем по факту. То есть не String(count, symbol), а просто String (count)
+    // С помощью него него создаёшь String, после чего копируешь кусочек строки в одно действие. 
+    // Второй вариант, создать дефолтный стринг и для него создать новый массив прям здесь, который и положить в его память (не забыв освободить предыдущий)
+    // А здесь теперь будет не 2 обращения к памяти, а по количеству расширений, что может быть много
     String copy;
     for (size_t i = 0; i < static_cast<size_t>(count); ++i) {
         copy.push_back(str[start + i]);
