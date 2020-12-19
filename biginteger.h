@@ -4,6 +4,8 @@
 #include <vector>
 #include <assert.h>
 
+#include <algorithm>
+
 //
 // Created by h4zzkR on 24.11.2020.
 //
@@ -12,11 +14,8 @@
 #define BIGINT_BIGINTEGER_H
 
 class BigInteger {
-    // BigInteger class with base
-//    static const long long BASE = 1e4;
-//    static const int BIT = 4; // на самом деле не бит, ну ладно.
     static const long long BASE = 1e9;
-    static const int BIT = 9; // на самом деле не бит, ну ладно.
+    static const int BIT = 9;
     static const long long BLOCKS_N = 100;
 
     int size = 0;
@@ -39,23 +38,6 @@ class BigInteger {
         size = 0;
         sign = true;
         blocks_size = 0;
-    }
-
-    static bool isEqual(const BigInteger& first, const BigInteger& second, bool strict = true) {
-        if (first.size != second.size)
-            return false;
-        if (strict && (first.sign != second.sign)) // с учетом знака
-            return false;
-        else { // без учета знака
-            for (int i = 0; i < first.blocks_size; ++i)
-                if (first.blocks[i] != second.blocks[i])
-                    return false;
-        }
-        return true;
-    }
-
-    static void changeSign(BigInteger& num) {
-        num.sign = !num.sign;
     }
 
     void addTo(BigInteger& first, const BigInteger& num);
@@ -148,6 +130,10 @@ public:
         sign = (sign == 0);
     }
 
+    void setSign(bool sign) {
+        this->sign = sign;
+    }
+
     static bool absGreater(const BigInteger &one, const BigInteger &two) { // one > b
         if (!one.isNull() && two.isNull()) return true;
         if (one.size > two.size) return true;
@@ -162,16 +148,29 @@ public:
         return false;
     }
 
+    static bool isEqual(const BigInteger& first, const BigInteger& second, bool strict = true) {
+        if (first.size != second.size)
+            return false;
+        if (strict && (first.sign != second.sign)) // с учетом знака
+            return false;
+        else { // без учета знака
+            for (int i = 0; i < first.blocks_size; ++i)
+                if (first.blocks[i] != second.blocks[i])
+                    return false;
+        }
+        return true;
+    }
+
     bool isEven() const {
         return !(blocks[0] % 2);
     }
 
     bool isNull() const {
-        return (size == 0 && blocks_size == 0 && blocks[0] == 0);
+        return (blocks[0] == 0 && size == 0 && blocks_size == 0);
     }
 
     bool isOne() const {
-        return (size == 1 && blocks_size == 1 && blocks[0] == 1);
+        return (blocks[0] == 1 && sign == 1 && size == 1 && blocks_size == 1);
     }
 
     explicit operator bool() {
@@ -249,9 +248,8 @@ public:
         size = num.size;
         sign = num.sign;
         blocks_size = num.blocks_size;
-        for (int i = 0; i < blocks_size; i++) {
+        for (int i = 0; i < blocks_size; i++)
             blocks[i] = num.blocks[i];
-        }
     }
 
     BigInteger(const std::string& num) : BigInteger() { // check
@@ -266,9 +264,9 @@ public:
             int block = 0, last_pos = size;
             blocks_size = getBlocksSize(size);
             for (int i = static_cast<int>(number.size() - 1); i >= 0; i -= BigInteger::BIT) {
-                if (i < BigInteger::BIT) {
+                if (i < BigInteger::BIT)
                     blocks[block] = std::atoi(number.substr(0, last_pos).c_str());
-                } else {
+                else {
                     last_pos = i - BigInteger::BIT + 1;
                     blocks[block] = std::atoi(number.substr(last_pos, BigInteger::BIT).c_str());
                 }
@@ -493,9 +491,8 @@ BigInteger operator%(const BigInteger &dvd, const BigInteger &dvr) { // check
         return dvd;
     }
     BigInteger answ = BigInteger::divMod(dvd, dvr, true);
-    if (!answ.isNull() && dvd.sign == 0) {
-        BigInteger::changeSign(answ);
-    }
+    if (!answ.isNull() && dvd.sign == 0)
+        answ.changeSign();
     return answ;
 }
 BigInteger operator*(const BigInteger &num1, const BigInteger &num) {
@@ -507,25 +504,15 @@ BigInteger operator*(const BigInteger &num1, const BigInteger &num) {
     else if (num.isOne())
         copy = num1;
     else {
-//        int min_size, max_size;
-//        if (num1.blocks_size >= num.blocks_size) {
-//            max_size = num1.blocks_size;
-//            min_size = num.blocks_size;
-//        } else {
-//            max_size = num.blocks_size;
-//            min_size = num1.blocks_size;
-//        }
-
         for (int i = 0; i < BigInteger::BLOCKS_N; ++i) {
             for (int j = 0; j < BigInteger::BLOCKS_N; ++j) {
                 if (i + j > BigInteger::BLOCKS_N) break;
                 copy.blocks[i + j] += num1.blocks[i] * num.blocks[j];
             }
         }
-
         int last_nnul = 0;
         long long term = 0;
-//        int term = 0;
+        // нормализация блоков и перенос остатка в следующий разряд как в обычном умножении в столбик
         for (int i = 0; i < BigInteger::BLOCKS_N; ++i) {
             copy.blocks[i] += term;
             term = static_cast<long long>(copy.blocks[i] / BigInteger::BASE);
@@ -533,8 +520,9 @@ BigInteger operator*(const BigInteger &num1, const BigInteger &num) {
             if (copy.blocks[i] != 0) last_nnul = i;
         }
 
+        // высчитывание длины нового числа
         copy.blocks_size = last_nnul + 1;
-        copy.size = BigInteger::BIT * (copy.blocks_size - 1);
+        copy.size = BigInteger::BIT * (copy.blocks_size - 1); // последний блок (начало) может быть неполным
         copy.size += BigInteger::getIntSize(copy.blocks[copy.blocks_size - 1]);
     }
     if (num1.sign == num.sign)
@@ -595,25 +583,23 @@ std::istream &operator>>(std::istream &is, BigInteger &num) {
 // END OF BIGINTEGER
 
 class Rational {
-public: // todo
+public:
     BigInteger p;
     BigInteger q;
 
+
     void toIrreducible() {
-        if (p == q) {
+        if (BigInteger::isEqual(p, q, false)) {
+            bool sign = p.getSign();
             p = 1;
             q = 1;
-        } else if (q == 1)
+            p.setSign(sign);
             return;
-        bool sign = 1;
-        if (p < 0) {
-            p.changeSign();
-            sign = 0;
-        }
+        } else if (q == 1 || p == 0)
+            return;
         BigInteger gcd = GCD(p, q);
         p /= gcd;
         q /= gcd;
-        if (sign == 0) p.changeSign();
     }
 
     std::string buildDecimal(std::string main, std::string mantissa, size_t precision) const {
@@ -628,12 +614,12 @@ public: // todo
     }
 
     static BigInteger GCD(BigInteger a, BigInteger b) {
+        a.setSign(1);
+        b.setSign(1);
         if (a == 0) return b;
         if (b == 0) return a;
         if (a == b) return a;
         if (a == 1 || b == 1) return 1;
-        if (BigInteger::getSign(a) == 0) a.changeSign();
-        if (BigInteger::getSign(b) == 0) b.changeSign();
 
         BigInteger k = 1;
         while (!a.isNull() && !b.isNull()) {
@@ -651,7 +637,10 @@ public: // todo
     }
 
     static BigInteger LCS(const BigInteger& a, const BigInteger& b, const BigInteger& gcd) {
-        return (a * b) / gcd;
+        // least common multiple
+        BigInteger lcs = (a * b) / gcd;
+        lcs.setSign(1);
+        return lcs;
     }
 
 //    BigInteger div2(BigInteger&a) {
@@ -665,21 +654,30 @@ public:
         return std::stod(num);
     }
 
-    Rational() = default;
+    Rational() {
+        p = 1;
+        q = 1;
+    }
     Rational(const BigInteger& number) : Rational() {
 //        std::cerr << number;
         p = number;
         q = 1;
     }
     Rational(int number) : Rational(BigInteger(number)) {}
+    Rational(const Rational& number) {
+        p = number.p;
+        q = number.q;
+    }
 
     Rational& operator=(const Rational &num) {
+        std::cerr << "=" << '\n';
         p = num.p;
         q = num.q;
         return *this;
     }
 
     Rational operator-() const {
+        std::cerr << "-a" << '\n';
         Rational copy(p);
         copy.q = q;
         copy.p.changeSign();
@@ -687,67 +685,88 @@ public:
     }
 
     std::string toString() const {
+//        std::cerr << "toString_const" << '\n';
         Rational copy = *this;
         copy.toIrreducible();
         std::string pstr = copy.p.toString();
-        if (copy.q != 1)
+        if (!copy.q.isOne() && !p.isNull())
             return pstr + "/" + copy.q.toString();
         return pstr;
     }
 
     std::string toString() {
+//        std::cerr << "toString" << '\n';
         toIrreducible();
         std::string pstr = p.toString();
-        if (q != 1)
+        if (!q.isOne() && !p.isNull())
             return pstr + "/" + q.toString();
         return pstr;
     }
 
     Rational& operator+=(const Rational &num) {
-//        std::cerr << "PLS " << toString() << ' ' << num.toString() << '\n';
-        BigInteger gcd = GCD(q, num.q);
-        BigInteger lcs = LCS(q, num.q, gcd);
-        p = p * (lcs / q) + num.p * (lcs / num.q);
-        q = lcs;
-        toIrreducible();
+//        std::cerr << "+=" << toString() << ' ' << num.toString() << ' ';
+        if (!num.p.isNull()) {
+            if (q == num.q)
+                p += num.p;
+            else {
+                BigInteger gcd = GCD(q, num.q);
+                BigInteger lcs = LCS(q, num.q, gcd);
+                p = p * (lcs / q) + num.p * (lcs / num.q);
+                q = lcs;
+            }
+            toIrreducible();
+        }
+//        std::cerr << toString() << '\n';
         return *this;
     }
 
     Rational& operator-=(const Rational &num) {
-//        std::cerr << "MIN " << toString() << ' ' << num.toString() << '\n';
-        BigInteger gcd = GCD(q, num.q);
-        BigInteger lcs = LCS(q, num.q, gcd);
-        p = p * (lcs / q) - num.p * (lcs / num.q);
-        q = lcs;
-        toIrreducible();
+        std::cerr << "-=" << '\n';
+        *this += (-num);
         return *this;
     }
 
     Rational& operator*=(const Rational &num) {
-        p *= num.p;
-        q *= num.q;
-        if (q.getSign() == 0) {
-            q.changeSign();
+//        std::string a = toString(), b = num.toString();
+        if (num.p == -1) {
             p.changeSign();
+        } else if (!num.p.isOne() && !num.p.isNull()) {
+            p *= num.p;
+            q *= num.q;
+            if (q.getSign() == 0) {
+                q.changeSign();
+                p.changeSign();
+            }
+            toIrreducible();
         }
-        toIrreducible();
-//        std::cerr << "MUL " << toString() << ' ' << num.toString() << '\n';
+//        std::cerr << toString() << '\n';
         return *this;
     }
 
     Rational& operator/=(const Rational &num) {
-//        std::cerr << "DEL " << toString() << ' ' << num.toString() << '\n';
-        p *= num.q;
-        q *= num.p;
-        if (q.getSign() == 0) {
-            q.changeSign();
+//        std::cerr << "/= ";
+//        std::string a = toString(), b = num.toString();
+//        if (a.size() + b.size() > 140)
+//            std::cerr << "XxX" << '\n';
+//        else {
+//            std::cerr << a << ' ' << b << '\n';
+//        }
+        if (num.p == -1) {
             p.changeSign();
+        } else if (!num.p.isOne() && !num.p.isNull()) {
+            p *= num.q;
+            q *= num.p;
+            if (q.getSign() == 0) {
+                q.changeSign();
+                p.changeSign();
+            }
+            toIrreducible();
         }
-        toIrreducible();
         return *this;
     }
 
     std::string asDecimal(size_t precision = 0) const {
+//        std::cerr << "asDec" << '\n';
         if (p == 0)
             return buildDecimal("0", "0", precision);
         if (p == q)
@@ -828,93 +847,83 @@ public:
 
     friend bool operator>(const Rational& first, const Rational& second);
     friend bool operator<(const Rational& first, const Rational& second);
-    friend bool operator==(const Rational& first, const Rational& num);
-    friend bool operator!=(const Rational& first, const Rational& num);
-    friend bool operator>=(const Rational& first, const Rational& num);
-    friend bool operator<=(const Rational& first, const Rational& num);
-    friend Rational operator/(const Rational &num, const Rational &num2);
+    friend bool operator==(const Rational& first, const Rational& second);
+    friend bool operator!=(const Rational& first, const Rational& second);
+    friend bool operator>=(const Rational& first, const Rational& second);
+    friend bool operator<=(const Rational& first, const Rational& second);
+    friend Rational operator/(const Rational &first, const Rational &second);
 };
 
 bool operator>(const Rational& first, const Rational& second) {
-//    std::cerr << ">" << "\n";
     if (BigInteger::getSign(first.p) == 0 && BigInteger::getSign(second.p) == 1)
         return false;
     else if ((BigInteger::getSign(first.p) == 1 && BigInteger::getSign(second.p) == 0))
         return true;
     if (first.q == second.q)
         return first.p > second.p;
-    else {
+    else
         return first.p * second.q > second.p * first.q;
-    }
 }
 
 bool operator<(const Rational& first, const Rational& second) {
     return second > first;
 }
 
-bool operator==(const Rational& first, const Rational& num) {
-//    std::cerr << "==" << "\n";
-    if (BigInteger::getSign(first.p) != BigInteger::getSign(num.p))
+bool operator==(const Rational& first, const Rational& second) {
+    std::cerr << "==" << '\n';
+    if (first.p.getSign() != second.p.getSign())
         return false;
-    else if (first.p.isNull() && num.p.isNull())
+    else if (first.p.isNull() && second.p.isNull())
         return true;
-    else if (first.q == 1 && num.q == 1)
-        return first.p == num.p;
-    else {
-        return first.p * num.q == num.p * first.q;
-    }
-    return first.p == num.p;
-//    return first <= num && num >= first;
+    else if (first.q == 1 && second.q == 1)
+        return first.p == second.p;
+    else
+        return first.p * second.q == second.p * first.q;
 }
 
-bool operator!=(const Rational& first, const Rational& num) {
-    return !(first == num);
+bool operator!=(const Rational& first, const Rational& second) {
+    return !(first == second);
 }
 
-bool operator>=(const Rational& first, const Rational& num) {
-    return !(first < num);
+bool operator>=(const Rational& first, const Rational& second) {
+    return !(first < second);
 }
-bool operator<=(const Rational& first, const Rational& num) {
-    return !(first > num);
+bool operator<=(const Rational& first, const Rational& second) {
+    return !(first > second);
 }
 
-Rational operator-(const Rational &num, const Rational &num2) {
-    Rational copy = num;
-    copy -= num2;
+Rational operator-(const Rational &first, const Rational &second) {
+    std::cerr << "-" << '\n';
+    Rational copy = first;
+    copy -= second;
     return copy;
 }
 
-Rational operator+(const Rational &num, const Rational &num2) {
-    Rational copy = num;
-    copy += num2;
+Rational operator+(const Rational &first, const Rational &second) {
+    std::cerr << "+" << '\n';
+    Rational copy = first;
+    copy += second;
     return copy;
 }
 
-Rational operator*(const Rational &num, const Rational &num2) {
-    Rational copy = num;
-    copy *= num2;
+Rational operator*(const Rational &first, const Rational &second) {
+    std::cerr << "*" << '\n';
+    Rational copy = first;
+    copy *= second;
     return copy;
 }
 
-Rational operator/(const Rational &num, const Rational &num2) {
-    Rational copy = num;
-    copy /= num2;
+Rational operator/(const Rational &first, const Rational &second) {
+    std::cerr << "/" << '\n';
+    Rational copy = first;
+    copy /= second;
     return copy;
 }
 //
 #endif //BIGINT_BIGINTEGER_H
 //int main() {
-//////    Rational a = 113124;
-//////    a.q = 343434343;
-//    Rational a = BigInteger("1090267052236052663197456");
-//    BigInteger q = "12030286759213210141680";
-//    a.q = q;
-//    std::cout << a.toString();
-//////    Rational b = 1;
-//////    b.q = 5;
-//////    std::cout  << std::stod("6.7500000000000000000000");
-////    std::cout << a;
-////////    std::cout << (-a - b).toString();
-////////    aa -= bb;
-//////    return 0;
+//    Rational a = BigInteger("-12345113134324324324234324324");
+//    Rational b = BigInteger("-123451312312332425345355656563454223423423424");
+//    std::cout << (a / b).toString();
+//    return 0;
 //}
