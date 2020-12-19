@@ -37,6 +37,8 @@ private:
     }
 
 //    void resizeCapacity(double factor) { // Мистер Анджело, мистер Мещерин передает вам segfault : https://contest.yandex.ru/contest/21872/run-report/45618173/
+                                            // *Проглядел недоверчивым взором и отдал* Передайте ему, что resize должен быть без параметров, чтобы всякие дробные
+                                            // факторы, которые капасити меньше размера делают, не пролезали
 //        capacity = (size == 0) ? 1 : static_cast<size_t>(size * factor);
 //        std::cerr << static_cast<size_t>(size * factor) << ' ';
 //    }
@@ -290,11 +292,13 @@ String String::substr(int start, int count) const { // Нене, раньше б
     // Второй вариант, создать дефолтный стринг и для него создать новый массив прям здесь, который и положить в его память (не забыв освободить предыдущий)
     // А здесь теперь будет не 2 обращения к памяти, а по количеству расширений, что может быть много
 
+    // Ну почти, не инициализируется не значит не выделяется, но и так сойдёт...
     String copy(count);
     char* buf = new char[count * capacity_factor];
     memcpy(buf, str + start, count);
     copy.str = buf;
     copy.str[count + 1] = '\0'; // дичь какая-то, без этой строчки segfault
+    // Не уверен почему, нужно отлавливать
 //    std::copy(str + start, str + count, buf);
 //    delete [] copy.str;
 //    copy.str = buf;
