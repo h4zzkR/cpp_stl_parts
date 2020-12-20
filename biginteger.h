@@ -41,23 +41,26 @@ class BigInteger {
     }
 
     void addTo(BigInteger& first, const BigInteger& num);
-    void subtractFromBigger(BigInteger& from, const BigInteger& what);
-    void subtractFromSmaller(BigInteger& from, const BigInteger& what);
+    void subtractFromBigger(BigInteger& from, const BigInteger& what); // вычитание из более длинного
+    void subtractFromSmaller(BigInteger& from, const BigInteger& what); // вычитание из менее длинного
 
-    friend bool operator>(const BigInteger& first, const BigInteger& num);
-    friend bool operator<(const BigInteger& first, const BigInteger& num);
-    friend bool operator==(const BigInteger& first, const BigInteger& num);
-    friend bool operator!=(const BigInteger& first, const BigInteger& num);
-    friend bool operator>=(const BigInteger& first, const BigInteger& num);
-    friend bool operator<=(const BigInteger& first, const BigInteger& num);
-    friend BigInteger operator*(const BigInteger &num1, const BigInteger &num);
-    friend BigInteger operator/(const BigInteger &num1, const BigInteger &num);
-    friend BigInteger operator%(const BigInteger &num1, const BigInteger &num);
-
+    friend bool operator>(const BigInteger& first, const BigInteger& second);
+    friend bool operator<(const BigInteger& first, const BigInteger& second);
+    friend bool operator==(const BigInteger& first, const BigInteger& second);
+    friend bool operator!=(const BigInteger& first, const BigInteger& second);
+    friend bool operator>=(const BigInteger& first, const BigInteger& second);
+    friend bool operator<=(const BigInteger& first, const BigInteger& second);
+    friend BigInteger operator*(const BigInteger &num1, const BigInteger &second);
+    friend BigInteger operator/(const BigInteger &num1, const BigInteger &second);
+    friend BigInteger operator%(const BigInteger &num1, const BigInteger &second);
     friend std::ostream& operator<< (std::ostream &out, const BigInteger& num);
     friend std::istream &operator>>(std::istream &is, BigInteger &num);
 
     static BigInteger divMod(const BigInteger& dividend_, const BigInteger& divider_, bool mod = false) {
+        /*
+         * Функция, способная возвращать целочисленное частное и остаток от деления
+         * Что-то смешанное между делением по базе и просто делением по разрадям числа в 10 СС
+         */
         if (!mod && (dividend_ == 0 || dividend_.size < divider_.size))
             return 0;
         if (divider_ == dividend_)
@@ -65,25 +68,23 @@ class BigInteger {
         if (divider_ == 1 || divider_ == -1)
             return (mod) ? 0 : dividend_;
         if (!mod) {
-            if (!absGreater(dividend_, divider_)) {
+            if (!absGreater(dividend_, divider_))
                 if (BigInteger::isEqual(dividend_, divider_, false)) return 1;
-            }
         }
 
-        BigInteger dvd = dividend_;
-        dvd.sign = 1;
-
-        BigInteger dvr = divider_;
+        BigInteger dvd = dividend_; // копия для const
+        BigInteger dvr = divider_; // копия для const
         dvr.sign = 1;
+        dvd.sign = 1;
 
         std::string dvd_s = dvd.toString();
         std::string dvt_s = dvr.toString();
 
         int index = static_cast<int>(dvt_s.size()) - 1;
-        BigInteger term = dvd_s.substr(0, index);
+        BigInteger term = dvd_s.substr(0, index);  // аналогично делению в столбик, блок, с которым работаем, он же - остаток от деления
 
-        BigInteger current_quotient;
-        std::string quotient;
+        long long current_quotient; // разряд частного
+        std::string quotient; // частное
 
         while (index < dvd.size) {
             term *= 10;                 // сносим вниз
@@ -92,9 +93,9 @@ class BigInteger {
 
             current_quotient = 1;
             while (term < dvr) {
-                if (!quotient.empty())
+                if (!quotient.empty()) // если остаток меньше делителя, в частное добавить 0
                     quotient.push_back('0');
-                if (index < dvd.size) {
+                if (index < dvd.size) { // добавление в остаток следующей цифры
                     term *= 10;
                     term += dvd_s[index] - 48;
                     ++index;
@@ -102,10 +103,10 @@ class BigInteger {
                     break;
             }
 
-            if (term == dvr) {
+            if (term == dvr) { // остаток в точности равен делителю
                 quotient.push_back('1');
                 term = 0;
-            } else if (term > dvr) {
+            } else if (term > dvr) { // деление на короткое число, в цикле
                 BigInteger divr = dvr;
                 while (divr < term) {
                     divr += dvr;
@@ -118,7 +119,7 @@ class BigInteger {
                     // term = term - (divr - dvr)
                     term -= divr;
                 }
-                quotient.append(current_quotient.toString());
+                quotient.append(std::to_string(current_quotient));
             }
         }
         return (mod) ? term : quotient;
@@ -132,33 +133,6 @@ public:
 
     void setSign(bool sign) {
         this->sign = sign;
-    }
-
-    static bool absGreater(const BigInteger &one, const BigInteger &two) { // one > b
-        if (!one.isNull() && two.isNull()) return true;
-        if (one.size > two.size) return true;
-        if (one.size == two.size) {
-            for (int i = one.blocks_size - 1; i >= 0; --i) {
-                if (one.blocks[i] > two.blocks[i])
-                    return true;
-                if (one.blocks[i] < two.blocks[i])
-                    return false;
-            }
-        }
-        return false;
-    }
-
-    static bool isEqual(const BigInteger& first, const BigInteger& second, bool strict = true) {
-        if (first.size != second.size)
-            return false;
-        if (strict && (first.sign != second.sign)) // с учетом знака
-            return false;
-        else { // без учета знака
-            for (int i = 0; i < first.blocks_size; ++i)
-                if (first.blocks[i] != second.blocks[i])
-                    return false;
-        }
-        return true;
     }
 
     bool isEven() const {
@@ -183,6 +157,35 @@ public:
 
     bool getSign() const {
         return sign;
+    }
+
+    static bool absGreater(const BigInteger &one, const BigInteger &two) {
+        // сравнение первого со вторым по модулю (a > b)
+        if (!one.isNull() && two.isNull()) return true;
+        if (one.size > two.size) return true;
+        if (one.size == two.size) {
+            for (int i = one.blocks_size - 1; i >= 0; --i) {
+                if (one.blocks[i] > two.blocks[i])
+                    return true;
+                if (one.blocks[i] < two.blocks[i])
+                    return false;
+            }
+        }
+        return false;
+    }
+
+    static bool isEqual(const BigInteger& first, const BigInteger& second, bool strict = true) {
+        // равенство первого со вторым, возможно по модулю
+        if (first.size != second.size)
+            return false;
+        if (strict && (first.sign != second.sign)) // с учетом знака
+            return false;
+        else { // без учета знака
+            for (int i = 0; i < first.blocks_size; ++i)
+                if (first.blocks[i] != second.blocks[i])
+                    return false;
+        }
+        return true;
     }
 
     BigInteger operator-() const {
@@ -217,7 +220,6 @@ public:
     BigInteger& operator*=(const BigInteger &num);
     BigInteger& operator/=(const BigInteger &num);
     BigInteger& operator%=(const BigInteger &num);
-
     BigInteger& operator-=(const BigInteger& num);
     std::string toString() const;
 
@@ -226,23 +228,23 @@ public:
         setNull();
     }
 
-    BigInteger(const int integer) : BigInteger() {
-        int integer_ = integer;
+    BigInteger(int integer) : BigInteger() {
+        /*
+         * Числа хранятся по блокам в обратном порядке
+         */
         int i = 0;
         if (integer != 0) {
             sign = (integer >= 0);
-            if (sign == 0) integer_ *= (-1);
-            size = getIntSize(integer_);
+            if (sign == 0) integer *= (-1);
+            size = getIntSize(integer);
             blocks_size = getBlocksSize(size);
-            while (integer_) {
-                blocks[i] = integer_ % BASE;
-                integer_ /= BASE;
+            while (integer) {
+                blocks[i] = integer % BASE;
+                integer /= BASE;
                 ++i;
             }
         }
     }
-
-    explicit BigInteger(const char integer) : BigInteger(integer - 48) {}
 
     BigInteger(const BigInteger& num) : BigInteger() {
         size = num.size;
@@ -362,103 +364,103 @@ void BigInteger::subtractFromSmaller(BigInteger &from, const BigInteger &what) {
         sign = 1;
     }
 }
-bool operator==(const BigInteger &first, const BigInteger &num) {
-    return BigInteger::isEqual(first, num, true);
+bool operator==(const BigInteger &first, const BigInteger &second) {
+    return BigInteger::isEqual(first, second, true);
 }
-bool operator!=(const BigInteger &first, const BigInteger &num) {
-    return !(first == num);
+bool operator!=(const BigInteger &first, const BigInteger &second) {
+    return !(first == second);
 }
-bool operator>(const BigInteger& first, const BigInteger& num) {
+bool operator>(const BigInteger& first, const BigInteger& second) {
     if (first.isNull()) {
-        if (num.isNull() || num.sign == 1)
+        if (second.isNull() || second.sign == 1)
             return false;
-        if (num.sign == 1)
+        if (second.sign == 1)
             return true;
     }
 
-    if (num.isNull()) {
+    if (second.isNull()) {
         if (first.isNull() || first.sign == 0)
             return false;
         if (first.sign == 1)
             return true;
     }
 
-    if (first.sign > num.sign) {
+    if (first.sign > second.sign) {
         return true;
-    } else if (first.sign < num.sign) {
+    } else if (first.sign < second.sign) {
         return false;
     } else { // знаки равны
-        bool compare = BigInteger::absGreater(first, num);
+        bool compare = BigInteger::absGreater(first, second);
         if (first.sign == 0)
             return !compare;
         return compare;
     }
 }
-bool operator<(const BigInteger& first, const BigInteger& num) {
-    return num > first;
+bool operator<(const BigInteger& first, const BigInteger& second) {
+    return second > first;
 }
-bool operator>=(const BigInteger& first, const BigInteger& num) {
-    return !(first < num);
+bool operator>=(const BigInteger& first, const BigInteger& second) {
+    return !(first < second);
 }
-bool operator<=(const BigInteger& first, const BigInteger& num) {
-    return !(first > num);
+bool operator<=(const BigInteger& first, const BigInteger& second) {
+    return !(first > second);
 }
 
-BigInteger &BigInteger::operator+=(const BigInteger &num) {
-    bool compare = absGreater(*this, num);
-    if (num.isNull())
+BigInteger &BigInteger::operator+=(const BigInteger &second) {
+    bool compare = absGreater(*this, second);
+    if (second.isNull())
         return *this;
     else if (isNull()) {
-        *this = num;
+        *this = second;
         return *this;
     } else {
-        if (sign == num.sign) {
-            addTo(*this, num);
-        } else if (sign == 1 && num.sign == 0) {
+        if (sign == second.sign) {
+            addTo(*this, second);
+        } else if (sign == 1 && second.sign == 0) {
             if (compare) {
-                subtractFromBigger(*this, num);
+                subtractFromBigger(*this, second);
             } else {
-                subtractFromSmaller(*this, num);
+                subtractFromSmaller(*this, second);
                 sign = 0;
             }
-        } else if (sign == 0 && num.sign == 1) {
+        } else if (sign == 0 && second.sign == 1) {
             if (compare) {
-                subtractFromBigger(*this, num);
+                subtractFromBigger(*this, second);
             } else {
-                subtractFromSmaller(*this, num);
+                subtractFromSmaller(*this, second);
                 sign = 1;
             }
         }
         return *this;
     }
 }
-BigInteger &BigInteger::operator-=(const BigInteger &num) {
-    bool compare = absGreater(*this, num);
-    if (sign == 1 && num.sign == 1) {
+BigInteger &BigInteger::operator-=(const BigInteger &second) {
+    bool compare = absGreater(*this, second);
+    if (sign == 1 && second.sign == 1) {
         if (compare) { // left is greater 10 - 5
-            subtractFromBigger(*this, num);
+            subtractFromBigger(*this, second);
         } else {
-            subtractFromSmaller(*this, num); // 5 - 10
+            subtractFromSmaller(*this, second); // 5 - 10
             sign = false;
         }
-    } else if (sign == 0 && num.sign == 0) {
+    } else if (sign == 0 && second.sign == 0) {
         if (compare) { // левый длиннее
-            subtractFromBigger(*this, num); // -55 - (-2) = 2 - 55
+            subtractFromBigger(*this, second); // -55 - (-2) = 2 - 55
         } else { // -5 - (-10) = 10 - 5 > 0
-            subtractFromSmaller(*this, num);
+            subtractFromSmaller(*this, second);
             sign = 1;
         }
-    } else if ((sign == 1 && num.sign == 0) || (sign == 0 && num.sign == 1)) {
-        addTo(*this, num);
+    } else if ((sign == 1 && second.sign == 0) || (sign == 0 && second.sign == 1)) {
+        addTo(*this, second);
     }
     return *this;
 }
-BigInteger &BigInteger::operator/=(const BigInteger &num) {
-    *this = *this / num;
+BigInteger &BigInteger::operator/=(const BigInteger &second) {
+    *this = *this / second;
     return *this;
 }
-BigInteger &BigInteger::operator%=(const BigInteger &num) {
-    *this = *this % num;
+BigInteger &BigInteger::operator%=(const BigInteger &second) {
+    *this = *this % second;
     return *this;
 }
 BigInteger operator+(const BigInteger& first, const BigInteger& second) {
@@ -901,39 +903,6 @@ Rational operator/(const Rational &first, const Rational &second) {
 
 //
 #endif //BIGINT_BIGINTEGER_H
-
-//void command_manager() {
-//    std::string a, c, b;
-//    std::cin >> a >> c >> b;
-//    BigInteger aa = a;
-//    BigInteger bb = b;
-//    if (c == "+") {
-//        std::cout << aa + bb;
-//    } else if (c == "-") {
-//        std::cout << aa - bb;
-//    } else if (c == "*") {
-//        std::cout << aa * bb;
-//    } else if (c == "/") {
-//        std::cout << aa / bb;
-//    } else if (c == ">") {
-//        std::cout << int((aa > bb));
-//    } else if (c == "<") {
-//        std::cout << int((aa < bb));
-//    } else if (c == ">=") {
-//        std::cout << int((aa >= bb));
-//    } else if (c == "<=") {
-//        std::cout << int((aa <= bb));
-//    } else if (c == "==") {
-//        std::cout << int((aa == bb));
-//    } else if (c == "!=") {
-//        std::cout << int((aa != bb));
-//    }
-//    else if (c == "%") {
-//        std::cout << aa % bb;
-//    }
-//    std::cout << '\n';
-//}
-
 
 //int main() {
 //    int n;
