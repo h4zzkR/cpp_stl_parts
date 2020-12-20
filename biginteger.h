@@ -766,7 +766,7 @@ public:
 
         int index;
         BigInteger term;
-        BigInteger current_quotient;
+        long long current_quotient;
         std::string quotient;
         std::string mantissa;
         bool noint = !BigInteger::absGreater(p, q);
@@ -816,8 +816,8 @@ public:
                     // term = term - (divr - dvr)
                     term -= divr;
                 }
-                if (noint) mantissa.append(current_quotient.toString());
-                else quotient.append(current_quotient.toString());
+                if (noint) mantissa.append(std::to_string(current_quotient));
+                else quotient.append(std::to_string(current_quotient));
             }
             if (extended_precision - index == precision) noint = true;
         }
