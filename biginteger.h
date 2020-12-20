@@ -20,7 +20,7 @@ class BigInteger {
 
     int size = 0;
     int blocks_size = 0;
-    bool sign = true; // 1 is plus
+    bool sign = true; // 1 is plus // is_positive
 
     std::vector <long long> blocks;
 
@@ -43,7 +43,8 @@ class BigInteger {
     void addTo(BigInteger& first, const BigInteger& num);
     void subtractFromBigger(BigInteger& from, const BigInteger& what); // вычитание из более длинного
     void subtractFromSmaller(BigInteger& from, const BigInteger& what); // вычитание из менее длинного
-
+    
+    //Тут явно перебор с friend, 2 стрима и 2 сравнения, не больше
     friend bool operator>(const BigInteger& first, const BigInteger& second);
     friend bool operator<(const BigInteger& first, const BigInteger& second);
     friend bool operator==(const BigInteger& first, const BigInteger& second);
@@ -127,11 +128,11 @@ class BigInteger {
 
 public:
 
-    void changeSign() {
+    void changeSign() {// Эта должна быть в private. Снаружи можно перегрузить для *=-1 и выполнять её быстро
         sign = (sign == 0);
     }
 
-    void setSign(bool sign) {
+    void setSign(bool sign) {// И эта, где ты видел у инта функцию изменения знака, можно лишь в память новое число записать
         this->sign = sign;
     }
 
@@ -139,23 +140,24 @@ public:
         return !(blocks[0] % 2);
     }
 
-    bool isNull() const {
+    bool isNull() const {// Этим должен заниматься каст в bool
         return (blocks[0] == 0 && size == 0 && blocks_size == 0);
     }
 
-    bool isOne() const {
+    bool isOne() const {// == 1?
         return (blocks[0] == 1 && sign == 1 && size == 1 && blocks_size == 1);
     }
 
-    explicit operator bool() {
+    explicit operator bool() {// По умолчанию у тебя size никогда не должен быть равен 0. Даже просто создание BigInt должно делать число от 0
         return (size != 0 && blocks[0] != 0);
     }
 
-    int getSize() const {
+    int getSize() const {// Так же в private, либо переименуй в log, так как возвращает количество разрядов... Ну и на 9 умножить минус... короче просто в private,
+        // Нечего людям лишний раз думать об этом
         return size;
     }
 
-    bool getSign() const {
+    bool getSign() const {// < 0?
         return sign;
     }
 
@@ -190,7 +192,7 @@ public:
 
     BigInteger operator-() const {
         BigInteger copy(*this);
-        copy.sign = (sign == 0);
+        copy.sign = (sign == 0);// !sign
         return copy;
     }
 
@@ -224,7 +226,7 @@ public:
     std::string toString() const;
 
     BigInteger() {
-        blocks.resize(BLOCKS_N);
+        blocks.resize(BLOCKS_N);// Не многовато ли блоков для числа по умолчанию?
         setNull();
     }
 
@@ -250,7 +252,7 @@ public:
         size = num.size;
         sign = num.sign;
         blocks_size = num.blocks_size;
-        for (int i = 0; i < blocks_size; i++)
+        for (int i = 0; i < blocks_size; i++)// У вектора так же есть стандартный конструктор копирования, который за тебя всё может сделать
             blocks[i] = num.blocks[i];
     }
 
@@ -267,7 +269,7 @@ public:
             blocks_size = getBlocksSize(size);
             for (int i = static_cast<int>(number.size() - 1); i >= 0; i -= BigInteger::BIT) {
                 if (i < BigInteger::BIT)
-                    blocks[block] = std::atoi(number.substr(0, last_pos).c_str());
+                    blocks[block] = std::atoi(number.substr(0, last_pos).c_str());//std::stoi
                 else {
                     last_pos = i - BigInteger::BIT + 1;
                     blocks[block] = std::atoi(number.substr(last_pos, BigInteger::BIT).c_str());
@@ -455,6 +457,7 @@ BigInteger &BigInteger::operator-=(const BigInteger &second) {
     }
     return *this;
 }
+// по хорошему эти вещи нужно делать наоборот чтобы избежать лишнего копирования, но их там и так много
 BigInteger &BigInteger::operator/=(const BigInteger &second) {
     *this = *this / second;
     return *this;
@@ -563,6 +566,7 @@ std::ostream &operator<<(std::ostream &out, const BigInteger &num) {
     out << num.toString();
     return out;
 }
+// Ты можешь просто принять на вход String
 std::istream &operator>>(std::istream &is, BigInteger &num) {
     char buf = '\0';
     std::string number;
@@ -645,7 +649,7 @@ public:
 
     explicit operator double() {
         std::cerr << "double" << '\n';
-        std::string num = asDecimal(15);
+        std::string num = asDecimal(15);// 32, учитывая его точность, как раз будет... хотя он может до 100 знаков содержать за счёт мантисы
         return std::stod(num);
     }
 
@@ -662,30 +666,30 @@ public:
     }
 
     Rational& operator=(const Rational &num) {
-        std::cerr << "=" << '\n';
+        //std::cerr << "=" << '\n';
         p = num.p;
         q = num.q;
         return *this;
     }
 
     Rational operator-() const {
-        std::cerr << "-a" << '\n';
+        //std::cerr << "-a" << '\n';
         Rational copy(p);
         copy.q = q;
-        copy.p.changeSign();
+        copy.p.changeSign();// *=-1
         return copy;
     }
 
     std::string toString() const {
         Rational copy = *this;
-        copy.toIrreducible();
+        copy.toIrreducible();// она уже такой должна быть по идее, сразу после создания
         std::string pstr = copy.p.toString();
         if (!copy.q.isOne() && !p.isNull())
             return pstr + "/" + copy.q.toString();
         return pstr;
     }
 
-    std::string toString() {
+    std::string toString() {// И тогда не нужно будет делать копии
         toIrreducible();
         std::string pstr = p.toString();
         if (!q.isOne() && !p.isNull())
@@ -746,7 +750,8 @@ public:
         return *this;
     }
 
-    std::string asDecimal(size_t precision = 0) const {
+    std::string asDecimal(size_t precision = 0) const {// Как то многовато у тебя операций и копий для этого вычисления
+        // Проще просто подсчитать p*pow(10,precision)/q, потом каст к String и точку в нужной позиции
         std::cerr << "asDec" << toString() << ' ' << precision << '\n';
         if (p == 0)
             return buildDecimal("0", "0", precision);
