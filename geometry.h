@@ -108,7 +108,7 @@ public:
         x = end.x - start.x;
         y = end.y - start.y;
     }
-
+    // Вместо static это всё можно было сделать снаружи класса и не занимать static таблицу всем этим. И кстати - это структура а не класс
     static double abs(const Vector v) {
         return sqrt(pow(v.x, 2) + pow(v.y, 2));
     }
@@ -311,7 +311,7 @@ protected:
     double focusHalfDistance; // c
     double eccentricity_;
 
-    struct Equation {
+    struct Equation {// Зачем столько мороки, ведь всё можно быстро вычислить из фокусов и радиусов
         // https://math.stackexchange.com/questions/426150/what-is-the-general-equation-of-the-ellipse-that-is-not-in-the-origin-and-rotate
         /*
          * Структура для хранения параметров уравнения эллипса
@@ -546,7 +546,7 @@ public:
     explicit Circle() = default;
 
     explicit Circle(Point center, double radius) {
-//        : Ellipse(center, center, 2*radius) { }
+//        : Ellipse(center, center, 2*radius) { }// так лучше
         majorAxis = radius;
         minorAxis = radius;
         focus1 = center;
