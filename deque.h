@@ -85,12 +85,26 @@ class Deque {
 
     T **deque_deep_copy(const Deque &other) {
         T **newarray = new T *[other.capacity];
-        for (size_t i = 0; i < other.capacity; ++i) {
-            newarray[i] = new T[other.bucket_capacity];
-            for (size_t j = 0; j < other.bucket_capacity; ++j)
-                new(newarray[i] + j) T(other.array[i][j]);
+        size_t i = 0, j = 0;
+        try {
+            for (; i < other.capacity; ++i) {
+                newarray[i] = new T[other.bucket_capacity];
+                for (; j < other.bucket_capacity; ++j)
+                    new(newarray[i] + j) T(other.array[i][j]);
+                j = 0;
+            }
+            return newarray;
+        } catch (...) {
+            for (size_t k = 0; k < i; ++k) {
+                for (size_t l = 0; l < other.bucket_capacity; ++l)
+                    (newarray[k] + l)->~T();
+                delete[] reinterpret_cast<int8_t *>(newarray[k]);
+            }
+            for (size_t l = 0; l < j; ++l)
+                (newarray[i] + l)->~T();
+            delete[] reinterpret_cast<int8_t *>(newarray[i]);
+            throw;
         }
-        return newarray;
     }
 
     void deque_erase() {
