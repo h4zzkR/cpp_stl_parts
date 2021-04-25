@@ -37,6 +37,8 @@ class Deque {
         }
     }
 
+    // С точки зрения ООП круто было бы реализовать в reserve возможность вставить кастомную функцию (вместе с "отменителем" эффекта), и тогда уже выбирать
+    // Либо просто выделять память, либо ещё конструировать элементы
     void fill_reserve_buckets(size_t start, size_t end, const T &value) {
         size_t i = start, j = 0;
         try {
@@ -88,6 +90,7 @@ class Deque {
         size_t i = 0, j = 0;
         try {
             for (; i < other.capacity; ++i) {
+                // В данном случае будет вызов конструктора по умолчанию для всех элементов. Тебе нужно через new int8(n*sizeof(T)) делать (ну или ::operator new, что тоже самое). -5%
                 newarray[i] = new T[other.bucket_capacity];
                 for (; j < other.bucket_capacity; ++j)
                     new(newarray[i] + j) T(other.array[i][j]);
@@ -115,8 +118,9 @@ class Deque {
         delete[] array;
     }
 
+    // Комментарии с инструкцией пишут до объявления, тогда IDE покажет подсказку
+    /* You can call it ONLY for EMPTY buckets! */
     void deque_range_erase(size_t start, size_t end) {
-        /* You can call it ONLY for EMPTY buckets! */
         for (; start < end; ++start)
             delete[] reinterpret_cast<int8_t *>(array[start]);
     }
@@ -202,7 +206,7 @@ public:
     struct common_iterator {
     public:
         using difference_type = std::ptrdiff_t;
-        using value_type = T;
+        using value_type = T;// А почему здесь без conditional?
         using pointer = typename std::conditional_t<IsConst, const T *, T *>;
         using reference = typename std::conditional_t<IsConst, const T &, T &>;
         using iterator_category = std::random_access_iterator_tag;
@@ -379,6 +383,7 @@ public:
 
     using iterator = common_iterator<false>;
     using const_iterator = common_iterator<true>;
+    // Не обязательно, так как они объявлены внутри класса
     friend iterator;
     friend const_iterator;
 
