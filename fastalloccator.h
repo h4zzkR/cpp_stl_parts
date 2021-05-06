@@ -247,19 +247,25 @@ class List {
         Node* next;
         T value;
 
-        Node(Node* prev, Node* next, const T& value) : prev(prev), next(next), value(value) {}
+        template<typename U>
+        Node(Node* prev, Node* next, U&& value) : prev(prev), next(next), value(std::forward<U>(value)) {}
 
-        Node(const T& value, Node* prev = nullptr, Node* next = nullptr) : prev(prev), next(next), value(value) {}
+        template<typename U>
+        Node(U&& value, Node* prev = nullptr, Node* next = nullptr) : prev(prev), next(next), value(std::forward<U>(value)) {}
+
+        Node(T&& value, Node* prev = nullptr, Node* next = nullptr) : prev(prev), next(next), value(std::move(value)) {}
+
+        template<typename... Args>
+        Node(Node* prev, Node* next, Args&&... args) : prev(prev), next(next), value(std::forward<Args>(args)...) {}
 
         Node() {
             prev = nullptr;
             next = nullptr;
         }
-
     };
 
-    using nodeAllocType = typename std::allocator_traits<Allocator>::template rebind_alloc<Node>;
-    using alloc_traits = std::allocator_traits<nodeAllocType>;
+    using nodeAllocType     = typename std::allocator_traits<Allocator>::template rebind_alloc<Node>;
+    using alloc_traits      = std::allocator_traits<nodeAllocType>;
 
     nodeAllocType allocator;
     Allocator useless;
@@ -289,18 +295,22 @@ class List {
 
     void list_erase() {
         Node* tmp = afterfront;
-        afterfront = afterfront->next;
 
-        if (afterfront->next != afterback) {
+        if (afterfront->next == afterback) {
+            // Вырожденный случай: пустой лист
+            alloc_traits::deallocate(allocator, afterfront, 1);
+            alloc_traits::deallocate(allocator, afterback, 1);
+        } else {
+            afterfront = afterfront->next;
             while (afterfront->next != nullptr) {
                 Node *next = afterfront->next;
                 alloc_traits::destroy(allocator, afterfront);
                 alloc_traits::deallocate(allocator, afterfront, 1);
                 afterfront = next;
             }
+            alloc_traits::deallocate(allocator, afterfront, 1); // now it is afterback
+            alloc_traits::deallocate(allocator, tmp, 1);
         }
-        alloc_traits::deallocate(allocator, afterfront, 1); // now it is afterback
-        alloc_traits::deallocate(allocator, tmp, 1);
 
         afterback = nullptr;
         afterfront = nullptr;
@@ -310,62 +320,16 @@ class List {
 
 public:
 
+    size_t size() const { return _size; }
+    Allocator get_allocator() { return useless; }
+
     explicit List(const Allocator &alloc = Allocator()) : allocator(alloc) {
         useless = alloc_traits::select_on_container_copy_construction(alloc);
         loop_list();
     }
 
-    size_t size() const { return _size; }
-
-    Allocator get_allocator() {
-        return useless;
-    }
-
-    void push_back(const T& value) {;
-        Node* node = alloc_traits::allocate(allocator,1);
-        alloc_traits::construct(allocator, node, afterback->prev, afterback, value);
-        node->prev->next = node;
-        node->next->prev = node;
-        ++_size;
-    }
-
-    void push_front(const T& value) {
-        Node* node = alloc_traits::allocate(allocator,1);
-        alloc_traits::construct(allocator, node, afterfront, afterfront->next, value);
-        node->prev->next = node;
-        node->next->prev = node;
-        ++_size;
-    }
-
-    void pop_back() {
-        Node* node = afterback->prev;
-        if (node != afterfront) {
-            Node *step_back = node->prev;
-            if (step_back)
-                step_back->next = afterback;
-            alloc_traits::destroy(allocator, node);
-            alloc_traits::deallocate(allocator, node, 1);
-            afterback->prev = step_back;
-            --_size;
-        }
-    }
-
-    void pop_front() {
-        Node* node = afterfront->next;
-        if (node != afterback) {
-            Node* step_forward = node->next;
-            if (step_forward)
-                step_forward->prev = afterfront;
-            alloc_traits::destroy(allocator, node);
-            alloc_traits::deallocate(allocator, node, 1);
-            afterfront->next = step_forward;
-            --_size;
-        }
-    }
-
     List(size_t count, const T& value, const Allocator& alloc = Allocator()) : allocator(alloc) {
         loop_list();
-
         for (size_t i = 0; i < count; ++i)
             push_back(value);
     }
@@ -398,6 +362,23 @@ public:
         list_copy(oth);
     }
 
+    List(List&& oth) noexcept {
+        if constexpr (alloc_traits::propagate_on_container_move_assignment::value) {
+            if (useless == oth.useless)
+                useless = std::move(oth.useless);
+            if (allocator == oth.allocator)
+                allocator = std::move(oth.allocator);
+        } else {
+            useless = alloc_traits::select_on_container_copy_construction(oth.useless);
+            allocator = alloc_traits::select_on_container_copy_construction(oth.allocator);
+        }
+        afterfront = std::move(oth.afterfront);
+        afterback = std::move(oth.afterback);
+        _size = oth._size;
+        oth._size = 0;
+        oth.loop_list();
+    }
+
     List& operator=(const List& oth) {
         list_erase();
 
@@ -414,86 +395,123 @@ public:
         return *this;
     }
 
-    ~List() {
+    List& operator=(List&& oth) noexcept {
         list_erase();
+        if (alloc_traits::propagate_on_container_move_assignment::value == true && allocator != oth.allocator) {
+            if (allocator != oth.allocator)
+                allocator = std::move(oth.allocator);
+            if (useless != oth.useless)
+                useless = std::move(oth.useless);
+        }
+        afterfront = std::move(oth.afterfront);
+        afterback = std::move(oth.afterback);
+
+        _size = oth._size;
+        oth._size = 0;
+
+        oth.loop_list();
+        return *this;
     }
 
+    ~List() { list_erase(); }
+
+    template<typename U>
+    void push_back(U&& value) {;
+        Node* node = alloc_traits::allocate(allocator,1);
+        alloc_traits::construct(allocator, node, afterback->prev, afterback, std::forward<U>(value));
+        node->prev->next = node;
+        node->next->prev = node;
+        ++_size;
+    }
+
+    template<typename U>
+    void push_front(U&& value) {
+        Node* node = alloc_traits::allocate(allocator,1);
+        alloc_traits::construct(allocator, node, afterfront, afterfront->next, std::forward<U>(value));
+        node->prev->next = node;
+        node->next->prev = node;
+        ++_size;
+    }
+
+    void pop_back() {
+        Node* node = afterback->prev;
+        if (node != afterfront) {
+            Node *step_back = node->prev;
+            if (step_back)
+                step_back->next = afterback;
+            alloc_traits::destroy(allocator, node);
+            alloc_traits::deallocate(allocator, node, 1);
+            afterback->prev = step_back;
+            --_size;
+        }
+    }
+
+    void pop_front() {
+        Node* node = afterfront->next;
+        if (node != afterback) {
+            Node* step_forward = node->next;
+            if (step_forward)
+                step_forward->prev = afterfront;
+            alloc_traits::destroy(allocator, node);
+            alloc_traits::deallocate(allocator, node, 1);
+            afterfront->next = step_forward;
+            --_size;
+        }
+    }
 
     /// START OF ITERATOR ///
     template<bool IsConst>
     struct common_iterator {
     public:
-        using difference_type = std::ptrdiff_t;
-        using value_type = T;
-        using pointer = typename std::conditional_t<IsConst, const T *, T *>;
-        using reference = typename std::conditional_t<IsConst, const T &, T &>;
-        using iterator_category = std::bidirectional_iterator_tag;
+        using difference_type       = std::ptrdiff_t;
+        using value_type            = T;
+        using pointer               = typename std::conditional_t<IsConst, const T *, T *>;
+        using reference             = typename std::conditional_t<IsConst, const T &, T &>;
+        using iterator_category     = std::bidirectional_iterator_tag;
 
     private:
         friend List;
         Node* ptr;
-
         common_iterator(Node* ptr) : ptr(ptr) {}
 
     public:
-
         common_iterator() = default;
-
         common_iterator(const common_iterator &it) : ptr(it.ptr) {}
-
-        operator common_iterator<true>() {
-            return const_iterator(ptr);
-        }
-
+        operator common_iterator<true>() { return const_iterator(ptr); }
         common_iterator &operator=(const common_iterator &other) {
             ptr = other.ptr;
             return *this;
         }
-
-        pointer operator->() {
-            return ptr->value;
-        }
-
-        reference operator*() {
-            return ptr->value;
-        }
-
+        pointer operator->() { return &ptr->value; }
+        reference operator*() { return ptr->value; }
         common_iterator &operator++() {
             ptr = ptr->next;
             return *this;
         }
-
         common_iterator &operator--() {
             ptr = ptr->prev;
             return *this;
         }
-
         common_iterator operator++(int) {
             common_iterator iter(*this);
             ++(*this);
             return iter;
         }
-
         common_iterator operator--(int) {
             common_iterator iter(*this);
             --(*this);
             return iter;
         }
-
         common_iterator &operator+=(size_t shift) {
-            for (size_t i = 0; i < shift; ++i) {
+            for (size_t i = 0; i < shift; ++i)
                 ptr = ptr->next;
-            }
             return *this;
         }
-
         common_iterator &operator-=(size_t shift) {
-            for (size_t i = 0; i < shift; ++i) {
+            for (size_t i = 0; i < shift; ++i)
                 ptr = ptr->prev;
-            }
             return *this;
         }
-
         common_iterator operator+(size_t shift) {
             common_iterator n(*this);
             n += shift;
@@ -505,88 +523,34 @@ public:
             n -= shift;
             return n;
         }
-
-        bool operator==(const common_iterator &it) {
-            return (ptr == it.ptr);
-        }
-
-        bool operator!=(const common_iterator &it) {
-            return !(*this == it);
-        }
-
-        bool operator<(const common_iterator &rhs) {
-            return ptr < rhs.ptr;
-        }
-
-        bool operator>(const common_iterator &rhs) {
-            return rhs < *this;
-        }
-
-        bool operator<=(const common_iterator &rhs) {
-            return !(*this > rhs);
-        }
-
-        bool operator>=(const common_iterator &rhs) {
-            return !(*this < rhs);
-        }
+        bool operator==(const common_iterator &it) const { return (ptr == it.ptr); }
+        bool operator!=(const common_iterator &it) const { return !(*this == it); }
+        bool operator<(const common_iterator &rhs) const { return ptr < rhs.ptr; }
+        bool operator>(const common_iterator &rhs) const { return rhs < *this; }
+        bool operator<=(const common_iterator &rhs) const { return !(*this > rhs); }
+        bool operator>=(const common_iterator &rhs) const { return !(*this < rhs); }
     };
 
-    using iterator = common_iterator<false>;
-    using const_iterator = common_iterator<true>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-    using reverse_iterator = std::reverse_iterator<iterator>;
+    using iterator                  = common_iterator<false>;
+    using const_iterator            = common_iterator<true>;
+    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
+    using reverse_iterator          = std::reverse_iterator<iterator>;
 
     friend iterator;
     friend const_iterator;
 
-    iterator begin() {
-        return iterator(afterfront->next);
-    }
-
-    const_iterator begin() const {
-        return cbegin();
-    }
-
-    iterator end() {
-        return iterator(afterback);
-    }
-
-    const_iterator end() const {
-        return cend();
-    }
-
-    const_iterator cbegin() const {
-        return const_iterator(afterfront->next);
-    }
-
-    const_iterator cend() const {
-        return const_iterator(afterback);
-    }
-
-    std::reverse_iterator<iterator> rbegin() {;
-        return std::reverse_iterator<iterator>(afterback);
-    }
-
-    std::reverse_iterator<const_iterator> crbegin() const {
-        return std::reverse_iterator<const_iterator>(afterback);
-    }
-
-    std::reverse_iterator<iterator> rend() {
-        return std::reverse_iterator<iterator>(afterfront->next);
-    }
-
-    std::reverse_iterator<const_iterator> crend() const {
-        return std::reverse_iterator<const_iterator>(afterfront->next);
-    }
-
-    std::reverse_iterator<const_iterator> rend() const {
-        return crend();
-    }
-
-    std::reverse_iterator<const_iterator> rbegin() const {
-        return crbegin();
-    }
-
+    iterator begin() { return iterator(afterfront->next); }
+    const_iterator begin() const { return cbegin(); }
+    iterator end() { return iterator(afterback); }
+    const_iterator end() const { return cend(); }
+    const_iterator cbegin() const { return const_iterator(afterfront->next); }
+    const_iterator cend() const { return const_iterator(afterback); }
+    std::reverse_iterator<iterator> rbegin() {; return std::reverse_iterator<iterator>(afterback); }
+    std::reverse_iterator<const_iterator> crbegin() const { return std::reverse_iterator<const_iterator>(afterback); }
+    std::reverse_iterator<iterator> rend() { return std::reverse_iterator<iterator>(afterfront->next); }
+    std::reverse_iterator<const_iterator> crend() const { return std::reverse_iterator<const_iterator>(afterfront->next); }
+    std::reverse_iterator<const_iterator> rend() const { return crend(); }
+    std::reverse_iterator<const_iterator> rbegin() const { return crbegin(); }
     /// END OF ITERATOR ///
 
     void insert(const_iterator it, const T &item) {
@@ -599,6 +563,22 @@ public:
         ++_size;
     }
 
+    template<typename... Args>
+    iterator emplace(const_iterator pos, Args&&... args) {
+        Node* newnode = alloc_traits::allocate(allocator, 1);
+        std::allocator_traits<Allocator>::construct(useless, &newnode->value, std::forward<Args>(args)...);
+
+        newnode->prev = pos.ptr->prev;
+        newnode->next = pos.ptr;
+
+        if (newnode->prev)
+            newnode->prev->next = newnode;
+        if (newnode->next)
+            newnode->next->prev = newnode;
+        ++_size;
+        return iterator(newnode);
+    }
+
     void erase(const_iterator it) {
         Node* node = it.ptr;
         node->prev->next = node->next;
@@ -607,5 +587,4 @@ public:
         alloc_traits::deallocate(allocator, node, 1);
         --_size;
     }
-
 };
