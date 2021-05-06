@@ -91,7 +91,8 @@ class Deque {
         try {
             for (; i < other.capacity; ++i) {
                 // В данном случае будет вызов конструктора по умолчанию для всех элементов. Тебе нужно через new int8(n*sizeof(T)) делать (ну или ::operator new, что тоже самое). -5%
-                newarray[i] = new T[other.bucket_capacity];
+                // DONE
+                newarray[i] = ::operator new(other.bucket_capacity);
                 for (; j < other.bucket_capacity; ++j)
                     new(newarray[i] + j) T(other.array[i][j]);
                 j = 0;
@@ -206,7 +207,9 @@ public:
     struct common_iterator {
     public:
         using difference_type = std::ptrdiff_t;
-        using value_type = T;// А почему здесь без conditional?
+//        using value_type = T;// А почему здесь без conditional?
+//      DONE
+        using value_type = std::conditional_t<IsConst, const T, T>;
         using pointer = typename std::conditional_t<IsConst, const T *, T *>;
         using reference = typename std::conditional_t<IsConst, const T &, T &>;
         using iterator_category = std::random_access_iterator_tag;
