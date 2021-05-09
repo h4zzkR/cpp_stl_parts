@@ -83,7 +83,7 @@ template<size_t bucketSize>
 class FixedAllocator {
     const size_t reallocFactor = 2;
 
-    struct Bucket {
+    struct Bucket {// Бритва Оккама?.. 
         Bucket* prev;
         Bucket(Bucket* prev) : prev(prev) {}
         ~Bucket() {
@@ -208,7 +208,7 @@ public:
         fixedAlloc = other.fixedAlloc;
     }
 
-    FastAllocator(const FastAllocator<T>& other) {
+    FastAllocator(const FastAllocator<T>& other) {// Тоже самое же?
         this->fixedAlloc = other.fixedAlloc;
     }
 
@@ -248,7 +248,7 @@ class List {
         T value;
 
         template<typename U>
-        Node(Node* prev, Node* next, U&& value) : prev(prev), next(next), value(std::forward<U>(value)) {}
+        Node(Node* prev, Node* next, U&& value) : prev(prev), next(next), value(std::forward<U>(value)) {} // 2 одинаковых конструктора?
 
         template<typename U>
         Node(U&& value, Node* prev = nullptr, Node* next = nullptr) : prev(prev), next(next), value(std::forward<U>(value)) {}
@@ -324,7 +324,7 @@ public:
     Allocator get_allocator() { return useless; }
 
     explicit List(const Allocator &alloc = Allocator()) : allocator(alloc) {
-        useless = alloc_traits::select_on_container_copy_construction(alloc);
+        useless = alloc_traits::select_on_container_copy_construction(alloc);// Он всегда должен копироваться, тут ведь не копирование
         loop_list();
     }
 
@@ -416,7 +416,7 @@ public:
     ~List() { list_erase(); }
 
     template<typename U>
-    void push_back(U&& value) {;
+    void push_back(U&& value) {// Это скорее emplace, для push_back отдельно определяются копирование и move перегрузки
         Node* node = alloc_traits::allocate(allocator,1);
         alloc_traits::construct(allocator, node, afterback->prev, afterback, std::forward<U>(value));
         node->prev->next = node;
