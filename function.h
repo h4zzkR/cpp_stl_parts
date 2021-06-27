@@ -1,6 +1,10 @@
 #include <iostream>
-#include <type_traits>
+#include <functional>
+#include <cassert>
+//#include "function.h"
 
+
+// CODE
 template <typename UN>
 class Function;
 
@@ -102,7 +106,7 @@ public:
     Function(const Function& other) {
         if (other.allocPtr != nullptr) {
             carry = new Carry();
-            new(carry) Carry(other.carry);
+            new(carry) Carry(*other.carry);
             if (other.carry->allocSize == 0) { // placed on stack
                 allocPtr = &stack;
             } else { // placed in dynamic memory
@@ -138,7 +142,7 @@ public:
                 allocPtr = std::malloc(carry->allocSize);
             }
             carry->~Carry();
-            new(carry) Carry(other.carry);
+            new(carry) Carry(*other.carry);
             carry->toggle(allocPtr, other.allocPtr, 1);
         } else {
             erase();
