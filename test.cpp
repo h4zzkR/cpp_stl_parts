@@ -142,7 +142,7 @@ public:
                 allocPtr = std::malloc(carry->allocSize);
             }
             carry->~Carry();
-            new(carry) Carry(other.carry);
+            new(carry) Carry(*other.carry);
             carry->toggle(allocPtr, other.allocPtr, 1);
         } else {
             erase();
