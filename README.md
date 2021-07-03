@@ -1,1 +1,1 @@
-## long arithmetics on c++
+## long and rational arithmetics on c++
