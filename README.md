@@ -1,2 +1,1 @@
-# litvinov_ilya
-![shreck](./shrek.jpg)
+## std::string implementation
