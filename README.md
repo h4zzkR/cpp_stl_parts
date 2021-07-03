@@ -1,1 +1,1 @@
-## stl deque implementation
+## std::deque implementation
