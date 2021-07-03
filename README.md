@@ -1,2 +1,1 @@
-# litvinov_ilya
-![shreck](./shrek.jpg)
+## std::list implementation with custom pool allocator (faster, than standart)
