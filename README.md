@@ -1,7 +1,6 @@
 # cpp_stl_parts
-# Description
-
-Repo with implementation of the most important containers / objects i(and a little bit other things) n C++ Standart Library. All these things were given to me as homework for 1-2 semesters of the subject "Programming in C++" (2020/2021) at MIPT, which I graduated with honors.
+# Descriptio
+Repo with implementation of the most important containers / objects (and a little bit other things) in C++ Standart Library. All these things were given to me as homework for 1-2 semesters of the subject "Programming in C++" (2020/2021) at MIPT, which I graduated with honors.
 
 # Content (in descending order of writing time)
 
