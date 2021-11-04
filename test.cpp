@@ -1,7 +1,7 @@
 #include <iostream>
-#include <functional>
+//#include <functional>
 #include <cassert>
-//#include "function.h"
+#include "function.h"
 
 
 // CODE
